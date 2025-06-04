@@ -1,0 +1,2 @@
+- Compare and adapt this approach to the ones I already have
+- Separate the sections of lib.hpp into separate headers

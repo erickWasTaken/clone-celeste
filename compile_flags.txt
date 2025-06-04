@@ -1,2 +1,4 @@
 -I/home/blkcat/.local/share/vcpkg/installed/x64-linux/include
--std=c++20
+-Ithird_party -Ithird_party/Include
+-std=c++11
+-Wno-writable-strings
