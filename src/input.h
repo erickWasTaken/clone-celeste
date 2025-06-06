@@ -1,3 +1,5 @@
+#pragma once
+
 enum KeyCodeID{
   KEY_MOUSE_LEFT,
   KEY_MOUSE_MIDDLE,
@@ -67,3 +69,9 @@ enum KeyCodeID{
   
   KEY_COUNT = 255,
 };
+
+struct Input{
+  IVec2 screenSize;
+};
+
+static Input* input;

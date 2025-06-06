@@ -1,12 +1,23 @@
 #include "gl_renderer.h"
+#include "render_interface.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 struct GLContext{
     GLuint programID;
     long long shaderTimestamp;
 
+    GLuint textureID;
+    long long textureTimestamp;
+
+    GLuint transformSBOID;
+
+    GLuint screenSizeID;
 };
 
 static GLContext glContext;
+const char* TEXTURE_PATH = "assets/textures/Atlas.png";
 
 GLuint gl_create_shader(int shaderType, char* shaderPath, BumpAllocator* transientStorage){
     int fileSize = 0;
@@ -87,6 +98,44 @@ bool gl_init(BumpAllocator* transientStorage){
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
 
+    // Texture loading
+    {
+        int width, height, channels;
+        char* data = (char*)stbi_load(TEXTURE_PATH, &width, &height, &channels, 4);
+        if(!data){
+            SM_ASSERT(false, "Failed to load texture: %s", TEXTURE_PATH);
+            return false;
+        }
+
+        glGenTextures(1, &glContext.textureID);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, glContext.textureID);
+
+        // set the currently bound texture wrapping/filtering options
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+        // This setting only matters when using the GLSL texture() function
+        // When you use texelFetch() this setting has no effect,
+        // because texelFetch is designed for this purpose
+        // See: https://interactiveimmersive.io/blog/glsl/glsl-data-tricks/
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glContext.textureTimestamp = get_timestamp(TEXTURE_PATH);
+        stbi_image_free(data);
+    }
+
+    { // Transform storage buffer
+        glGenBuffers(1, &glContext.transformSBOID);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, glContext.transformSBOID);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Transform) * renderData->transforms.maxElements, renderData->transforms.elements, GL_DYNAMIC_DRAW);
+    }
+
+    { // Uniforms
+        glContext.screenSizeID = glGetUniformLocation(glContext.programID, "screenSize");
+    }
+
     glEnable(GL_FRAMEBUFFER_SRGB);
     glDisable(0x809D); // disable multismapling (???)
     
@@ -99,10 +148,79 @@ bool gl_init(BumpAllocator* transientStorage){
 }
 
 void gl_render(BumpAllocator* transientStorage){
-    glClearColor(.0f, .0f, .0f, .0f);
+    // Texture hot reload
+    {
+        long long currentTimestamp = get_timestamp(TEXTURE_PATH);
+
+        if(currentTimestamp > glContext.textureTimestamp){
+            glActiveTexture(GL_TEXTURE0);
+            int width, height, channels;
+            char* data = (char*)stbi_load(TEXTURE_PATH, &width, &height, &channels, 4);
+            stbi_image_free(data);
+        }
+    }
+
+    // Shader hot reload
+    {
+        long long timestampVert = get_timestamp("assets/shaders/quad.vert");
+        long long timestampFrag = get_timestamp("assets/shaders/quad.frag");
+
+        if(timestampVert > glContext.shaderTimestamp || timestampFrag > glContext.shaderTimestamp){
+            GLuint vertShaderID = gl_create_shader(GL_VERTEX_SHADER, "assets/shaders/quad.vert", transientStorage);
+            GLuint fragShaderID = gl_create_shader(GL_FRAGMENT_SHADER, "assets/shaders/quad.frag", transientStorage);
+
+            if(!vertShaderID || !fragShaderID){
+                SM_ASSERT(false, "failed to hot reload shaders");
+                return;
+            }
+
+            GLuint programID = glCreateProgram();
+            glAttachShader(programID, vertShaderID);
+            glAttachShader(programID, fragShaderID);
+            glLinkProgram(programID);
+
+            glDetachShader(programID, vertShaderID);
+            glDetachShader(programID, fragShaderID);
+            glDeleteShader(vertShaderID);
+            glDeleteShader(fragShaderID);
+
+            {
+                int programSuccess;
+                char programInfoLog[512];
+                glGetProgramiv(programID, GL_LINK_STATUS, &programSuccess);
+
+                if(!programSuccess){
+                    glGetProgramInfoLog(programID, 512, 0, programInfoLog);
+                    SM_ASSERT(false, "yep");
+                    SM_ASSERT(0, "Failed to link program: %s", programInfoLog);
+                    return;
+                }
+            }
+
+            glDeleteProgram(glContext.programID);
+            glContext.programID = programID;
+            glUseProgram(programID);
+
+            glContext.shaderTimestamp = max(timestampVert, timestampFrag);
+        }
+    }
+
+    glClearColor(119.0f / 255.0f, 33.0f / 255.0f, 111.0f / 255.0f, 1.0f);
     glClearDepth(.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glViewport(0, 0, 1280, 720);
 
-    glDrawArraysInstanced(GL_TRIANGLES, 0, 3, 1);
+    {
+        Vec2 screenSize = {(float)input->screenSize.x, (float)input->screenSize.y};
+        glUniform2fv(glContext.screenSizeID, 1, &screenSize.x);
+    }
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, glContext.transformSBOID);
+
+    // Game pass
+    {
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(Transform) * renderData->transforms.count, renderData->transforms.elements);    
+        glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 1);
+        renderData->transforms.count = 0;
+    }
 }

@@ -1,4 +1,14 @@
+#ifdef ENGINE
+#pragma once
+
+#include "lib.h"
+#define vec2 Vec2
+#define ivec2 IVec2
+
+#else
 #define BIT(i) 1 << i
+
+#endif
 
 struct Transform{
     vec2 pos;
@@ -11,6 +21,3 @@ struct Transform{
     int padding;
 };
 
-struct Material{
-    vec4 color;
-};

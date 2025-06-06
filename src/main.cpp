@@ -20,7 +20,20 @@ int main(){
     get_delta_time();
 
     BumpAllocator transientStorage = make_bump_allocator(MB(50));
-   
+    BumpAllocator persistentStorage = make_bump_allocator(MB(256));
+
+    input = (Input*)bump_alloc(&persistentStorage, sizeof(Input));
+    if(!input){
+        SM_ASSERT(false, "Failed to allocate memory for input!");
+        return -1;
+    }
+
+    renderData = (RenderData*)bump_alloc(&persistentStorage, sizeof(RenderData));
+    if(!renderData){
+        SM_ASSERT(false, "Failed to allocate memory for render data!");
+        return -1;
+    }
+
     const char* str = "Linux window test, plz work X(";
 
     platform_create_window(1280, 720, str);

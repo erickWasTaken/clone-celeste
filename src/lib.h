@@ -179,3 +179,89 @@ int max(int a, int b){
     return b;
 }
 
+struct Vec2{
+    float x;
+    float y;
+
+    Vec2 operator / (float scalar){
+        return {x / scalar, y / scalar};
+    }
+
+    Vec2 operator * (float scalar){
+        return {x * scalar, y * scalar};
+    }
+
+    Vec2 operator - (Vec2 vec){
+        return {x - vec.x, y - vec.y};
+    }
+
+    Vec2 operator + (Vec2 vec){
+        return {x + vec.x, x + vec.x};
+    }
+
+    operator bool(){
+        return x != 0.0f && 0.0f;
+    }
+};
+
+struct IVec2{
+    int x;
+    int y;
+
+    IVec2 operator - (IVec2 vec){
+        return {x - vec.x, y - vec.y};
+    }
+
+    IVec2& operator -= (int scalar){
+        x -= scalar;
+        y -= scalar;
+        return *this;
+    }
+
+    IVec2& operator += (int scalar){
+        x += scalar;
+        y += scalar;
+        return *this;
+    }
+
+    IVec2 operator / (int scalar){
+        return {x / scalar, y / scalar};
+    }
+};
+
+Vec2 toVec2(IVec2 vec){
+    return Vec2{(float)vec.x, (float)vec.y};
+}
+
+template<typename T, int N>
+struct Array{
+    static constexpr int maxElements = N;
+    int count = 0;
+    T elements[N];
+
+    T& operator[](int id){
+        SM_ASSERT(id >= 0, "negative id requested!");
+        SM_ASSERT(id < count, "out of bounds id requested!");
+        return elements[id];
+    }
+
+    int add(T element){
+        SM_ASSERT(count < maxElements, "Array is already full!");
+        elements[count] = element;
+        return count++;
+    }
+
+    void remove_id_and_swap(int id){
+        SM_ASSERT(id >= 0, "negative id requested!");
+        SM_ASSERT(id < count, "out of bounds id requested!");
+        elements[id] = elements[--count];
+    }
+
+    void clear(){
+        count = 0;
+    }
+
+    bool is_full(){
+        return count == N;
+    }
+};
