@@ -211,16 +211,19 @@ void gl_render(BumpAllocator* transientStorage){
     glViewport(0, 0, 1280, 720);
 
     {
-        Vec2 screenSize = {(float)input->screenSize.x, (float)input->screenSize.y};
+        Vec2 screenSize = {(float)1280, (float)720};
         glUniform2fv(glContext.screenSizeID, 1, &screenSize.x);
     }
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, glContext.transformSBOID);
+    // glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, glContext.transformSBOID);
 
     // Game pass
     {
+        if(renderData->transforms[0].size.x == 0)
+            SM_ASSERT(false, "gottem");
+
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(Transform) * renderData->transforms.count, renderData->transforms.elements);    
-        glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 1);
+        glDrawArraysInstanced(GL_TRIANGLES, 0, 6, renderData->transforms.count);
         renderData->transforms.count = 0;
     }
 }

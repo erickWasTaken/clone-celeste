@@ -39,6 +39,11 @@ int main(){
     platform_create_window(1280, 720, str);
     gl_init(&transientStorage);
     while(running){
+        for(int i = 0; i < (int)(1280 / 100); i++){
+            for(int j = 0; j < (int)(720 / 100); j++){
+                draw_sprite(SPRITE_DICE, {100.0f * i, 100.0f * j}, {100.0f, 100.0f});
+            }
+        }
         gl_render(&transientStorage);
         platform_swap_buffers();
 
