@@ -195,7 +195,6 @@ void gl_render(BumpAllocator* transientStorage){
 
                 if(!programSuccess){
                     glGetProgramInfoLog(programID, 512, 0, programInfoLog);
-                    SM_ASSERT(false, "yep");
                     SM_ASSERT(0, "Failed to link program: %s", programInfoLog);
                     return;
                 }
@@ -223,9 +222,6 @@ void gl_render(BumpAllocator* transientStorage){
 
     // Game pass
     {
-        if(renderData->transforms[0].size.x == 0)
-            SM_ASSERT(false, "gottem");
-
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(Transform) * renderData->transforms.count, renderData->transforms.elements);    
         glDrawArraysInstanced(GL_TRIANGLES, 0, 6, renderData->transforms.count);
         renderData->transforms.count = 0;

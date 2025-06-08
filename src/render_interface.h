@@ -21,6 +21,5 @@ void draw_sprite(SpriteID spriteID, Vec2 pos, Vec2 size){
     transform.spriteSize = sprite.size;
     transform.atlasOffset = sprite.atlasOffset;
 
-    std::cout << renderData->transforms.count << std::endl;
     renderData->transforms.add(transform);
 }

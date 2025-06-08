@@ -253,8 +253,8 @@ void* platform_load_dynamic_function(void* dll, const char* funcName){
 bool platform_free_dynamic_library(void* dll){
     SM_ASSERT(dll, "No lib provided!");
     int freeResult = dlclose(dll);
-    // SM_ASSERT(!freeResult, "Fialed to dlclose");
-    SM_TRACE("%s", freeResult);
+    SM_ASSERT(!freeResult, "Fialed to dlclose");
+    // SM_TRACE("%s", freeResult);
 
     return (bool)freeResult;
 }
