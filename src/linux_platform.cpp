@@ -4,6 +4,8 @@
 #include <X11/Xlib.h>
 #include <GL/glx.h>
 #include <iostream>
+#include <dlfcn.h> // dll logistics
+#include <unistd.h> // sleep
 
 static constexpr int BUTTONS_KEYCODE_OFFSET = 250;
 
@@ -227,4 +229,36 @@ void* platform_load_gl_function(char* funcName){
 
 void platform_swap_buffers(){
     glXSwapBuffers(display, window);
+}
+
+void* platform_load_dynamic_library(const char* dll){
+    char path[256] = {};
+    sprintf(path, "./%s", dll);
+    void* lib = dlopen(path, RTLD_NOW);
+    char *errstr = dlerror();
+    if(errstr != NULL){
+        SM_ASSERT(false, "A dynamic library linking error occurred: (%s)\n", errstr);
+    }
+    SM_ASSERT(lib, "Failed to load lib: %s", dll);
+
+    return lib;
+}
+
+void* platform_load_dynamic_function(void* dll, const char* funcName){
+    void* proc = dlsym(dll, funcName);
+    SM_ASSERT(proc, "Failed to load function: %s", funcName);
+    return proc;
+}
+
+bool platform_free_dynamic_library(void* dll){
+    SM_ASSERT(dll, "No lib provided!");
+    int freeResult = dlclose(dll);
+    // SM_ASSERT(!freeResult, "Fialed to dlclose");
+    SM_TRACE("%s", freeResult);
+
+    return (bool)freeResult;
+}
+
+void platform_sleep(unsigned int ms){
+    sleep(ms);
 }

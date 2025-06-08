@@ -156,7 +156,11 @@ void gl_render(BumpAllocator* transientStorage){
             glActiveTexture(GL_TEXTURE0);
             int width, height, channels;
             char* data = (char*)stbi_load(TEXTURE_PATH, &width, &height, &channels, 4);
-            stbi_image_free(data);
+            if(data){
+                glContext.textureTimestamp = currentTimestamp;
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+                stbi_image_free(data);
+            }
         }
     }
 
@@ -215,7 +219,7 @@ void gl_render(BumpAllocator* transientStorage){
         glUniform2fv(glContext.screenSizeID, 1, &screenSize.x);
     }
 
-    // glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, glContext.transformSBOID);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, glContext.transformSBOID);
 
     // Game pass
     {

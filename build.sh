@@ -11,9 +11,9 @@ if [[ "$(uname)" == "Linux" ]]; then
     libs="-lX11 -lGL -lfreetype"
     outputFile=app
 
-    # rm -f game_*
-    # clang++ -g "src/main.cpp" -shared -fPIC -o game_$timestamp.so $warnings $defines
-    # mv game_$timestamp.so game.so
+    rm -f game_*
+    clang++ -g "src/game.cpp" -shared -fPIC -o game_$timestamp.so $warnings $defines
+    mv game_$timestamp.so game.so
 fi
 
 clang++ $includes -g src/main.cpp -o$outputFile $libs $warnings $defines

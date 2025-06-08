@@ -167,6 +167,37 @@ char* read_file(const char* filePath, int* fileSize, BumpAllocator* bumpAllocato
     return file;
 }
 
+bool copy_file(const char* fileName, const char* outputName, char* buffer){
+    int fileSize = 0;
+    char* data = read_file(fileName, &fileSize, buffer);
+
+    auto outputFile = fopen(outputName, "wb");
+    if(!outputFile){
+        SM_ERROR("Failed opening file: %s", fileName);
+        return false;
+    }
+
+    int result = fwrite(data, sizeof(char), fileSize, outputFile);
+    if(!result){
+        SM_ERROR("Failed writing file: %s", fileName);
+        return false;
+    }
+
+    fclose(outputFile);
+    return true;
+}
+
+bool copy_file(const char* fileName, const char* outputName, BumpAllocator* bumpAllocator){
+    char* file = 0;
+    long fileSize2 = get_file_size(fileName);
+
+    if(fileSize2){
+        char* buffer = bump_alloc(bumpAllocator, fileSize2 + 1);
+        return copy_file(fileName, outputName, buffer);
+    }
+    return false;
+}
+
 long long get_timestamp(const char* file){
     struct stat file_stat = {};
     stat(file, &file_stat);
