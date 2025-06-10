@@ -204,12 +204,40 @@ long long get_timestamp(const char* file){
     return file_stat.st_mtime;
 }
 
-int max(int a, int b){
-    if(a > b)
-        return a;
-    return b;
-}
+template<typename T, int N>
+struct Array{
+    static constexpr int maxElements = N;
+    int count = 0;
+    T elements[N];
 
+    T& operator[](int id){
+        SM_ASSERT(id >= 0, "negative id requested!");
+        SM_ASSERT(id < count, "out of bounds id requested!");
+        return elements[id];
+    }
+
+    int add(T element){
+        SM_ASSERT(count < maxElements, "Array is already full!");
+        elements[count] = element;
+        return count++;
+    }
+
+    void remove_id_and_swap(int id){
+        SM_ASSERT(id >= 0, "negative id requested!");
+        SM_ASSERT(id < count, "out of bounds id requested!");
+        elements[id] = elements[--count];
+    }
+
+    void clear(){
+        count = 0;
+    }
+
+    bool is_full(){
+        return count == N;
+    }
+};
+
+// Math stuff
 struct Vec2{
     float x;
     float y;
@@ -260,39 +288,86 @@ struct IVec2{
     }
 };
 
+struct Vec4{
+    union{
+        float values[4];
+        struct{
+            float x;
+            float y;
+            float z;
+            float w;
+        };
+
+        struct{
+            float r;
+            float q;
+            float b;
+            float a;
+        };
+    };
+
+    float& operator[](int id){
+        return values[id];
+    }
+
+    bool operator ==(Vec4 vec){
+        return x == vec.x && y == vec.y && z == vec.z && w == vec.w;
+    }
+};
+
+struct Mat4{
+    union{
+        Vec4 values[4];
+        struct{
+            float ax;
+            float bx;
+            float cx;
+            float dx;
+
+            float ay;
+            float by;
+            float cy;
+            float dy;
+
+            float az;
+            float bz;
+            float cz;
+            float dz;
+
+            float aw;
+            float bw;
+            float cw;
+            float dw;
+        };
+    };
+
+    Vec4& operator[](int col){
+        return values[col];
+    }
+};
+
+Mat4 orthographic_projection(float left, float right, float top, float bottom){
+    Mat4 result = {};
+    result.aw = -(right + left) / (right - left);
+    result.bw = (top + bottom) / (top - bottom);
+    result.cw = 0.0f;
+
+    result[0][0] = 2.0f / (right - left);
+    result[1][1] = 2.0f / (top - bottom);
+    result[2][2] = 1.0f / (1.0f - 0.0f); // far and near plane
+    result[3][3] = 1.0f;
+
+    return result;
+}
+
 Vec2 toVec2(IVec2 vec){
     return Vec2{(float)vec.x, (float)vec.y};
 }
 
-template<typename T, int N>
-struct Array{
-    static constexpr int maxElements = N;
-    int count = 0;
-    T elements[N];
 
-    T& operator[](int id){
-        SM_ASSERT(id >= 0, "negative id requested!");
-        SM_ASSERT(id < count, "out of bounds id requested!");
-        return elements[id];
-    }
+int max(int a, int b){
+    if(a > b)
+        return a;
+    return b;
+}
 
-    int add(T element){
-        SM_ASSERT(count < maxElements, "Array is already full!");
-        elements[count] = element;
-        return count++;
-    }
-
-    void remove_id_and_swap(int id){
-        SM_ASSERT(id >= 0, "negative id requested!");
-        SM_ASSERT(id < count, "out of bounds id requested!");
-        elements[id] = elements[--count];
-    }
-
-    void clear(){
-        count = 0;
-    }
-
-    bool is_full(){
-        return count == N;
-    }
-};

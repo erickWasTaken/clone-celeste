@@ -3,7 +3,14 @@
 #include "assets.h"
 #include <iostream>
 
+struct OrthographicCamera{
+    float zoom = 1.0f;
+    Vec2 size;
+    Vec2 pos;
+};
+
 struct RenderData{
+    OrthographicCamera camera;
     Array<Transform, 1000> transforms;
 };
 
