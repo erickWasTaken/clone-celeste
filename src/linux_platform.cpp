@@ -78,7 +78,56 @@ bool platform_create_window(int width, int height, const char* title){
 }
 
 void platform_update_window(){
-    
+    Window root;
+    Window child;
+    int root_x;
+    int root_y;
+    int win_x;
+    int win_y;
+    unsigned int mask_return;
+    XQueryPointer(display, window, &root, &child, &root_x, &root_y, &win_x, &win_y, &mask_return);
+
+    input->mousePos = IVec2{win_x, win_y};
+
+    input->mousePosWorld = screen_to_world_space(input->mousePos);
+
+    while(XPending(display)){
+        XEvent event;
+        XNextEvent(display, &event);
+
+        switch(event.type){
+            case KeyPress:
+            case KeyRelease:
+            {
+                bool isDown = event.type == KeyPress;
+                KeyCodeID keyCode = keyCodeLookupTable[event.xkey.keycode];
+                Key* key = &input->keys[keyCode];
+
+                key->justPressed = !key->justPressed && !key->isDown && isDown;
+                key->justReleased = !key->justReleased && key->isDown && !isDown;
+                key->isDown = isDown;
+                key->halfTransitionCount++;
+                break;
+            }
+
+            case ButtonPress:
+            case ButtonRelease:
+            {
+                bool isDown = event.type == ButtonPress;
+                KeyCodeID keyCode = keyCodeLookupTable[BUTTONS_KEYCODE_OFFSET + event.xbutton.button];
+                Key* key = &input->keys[keyCode];
+
+                key->justPressed = !key->justPressed && !key->isDown && isDown;
+                key->justReleased = !key->justReleased && key->isDown && !isDown;
+                key->isDown = isDown;
+                key->halfTransitionCount++;
+                break;
+            }
+
+            default:
+                break;
+        }
+    }
 }
 
 void platform_fill_keycode_lookup_table(){
@@ -262,3 +311,5 @@ bool platform_free_dynamic_library(void* dll){
 void platform_sleep(unsigned int ms){
     sleep(ms);
 }
+
+

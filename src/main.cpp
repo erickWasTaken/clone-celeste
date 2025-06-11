@@ -1,5 +1,7 @@
 #include "lib.h"
 
+#include "input.h"
+
 #define APIENTRY
 #define GL_GLEXT_PROTOTYPES
 #include "glcorearb.h"
@@ -49,13 +51,15 @@ int main(){
     const char* str = "Linux window test, plz work X(";
 
     platform_create_window(1280, 720, str);
+    platform_fill_keycode_lookup_table();
     gl_init(&transientStorage);
 
     while(running){
         get_delta_time();
         reload_game_dll(&transientStorage);
+        platform_update_window();
 
-        update_game(renderData, gameState);
+        update_game(renderData, gameState, input);
         
         gl_render(&transientStorage);
         platform_swap_buffers();
@@ -76,8 +80,8 @@ double get_delta_time(){
     return delta;
 }
 
-void update_game(RenderData* renderDataIn, GameState* gameStateIn){
-    update_game_ptr(renderDataIn, gameStateIn);
+void update_game(RenderData* renderDataIn, GameState* gameStateIn, Input* inputIn){
+    update_game_ptr(renderDataIn, gameStateIn, inputIn);
 }
 
 void reload_game_dll(BumpAllocator* transientStorage){

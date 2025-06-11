@@ -2,6 +2,7 @@
 #include "shader_header.h"
 #include "assets.h"
 #include <iostream>
+#include "input.h"
 
 struct OrthographicCamera{
     float zoom = 1.0f;
@@ -18,9 +19,7 @@ static RenderData* renderData;
 
 void draw_sprite(SpriteID spriteID, Vec2 pos){
     Sprite sprite = get_sprite(spriteID);
-    if(sprite.size.x != 16){
-        SM_ASSERT(false, "No sprite!");
-    }
+    
     Transform transform = {};
 
     transform.pos = pos;
@@ -29,4 +28,20 @@ void draw_sprite(SpriteID spriteID, Vec2 pos){
     transform.atlasOffset = sprite.atlasOffset;
 
     renderData->transforms.add(transform);
+}
+
+void draw_sprite(SpriteID spriteID, IVec2 pos){
+    return draw_sprite(spriteID, toVec2(pos));
+}
+
+IVec2 screen_to_world_space(IVec2 coord){
+    OrthographicCamera cam = renderData->camera;
+    
+    int xPos = (float)coord.x / (float)input->screenSize.x * cam.size.x;
+    xPos += -cam.size.x / 2.0f + cam.pos.x;
+
+    int yPos = (float)coord.y / (float)input->screenSize.y * cam.size.y;
+    yPos += cam.size.y / 2.0f + cam.pos.y;
+
+    return {xPos, yPos};
 }

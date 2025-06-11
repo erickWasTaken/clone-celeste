@@ -1,5 +1,6 @@
 #pragma once
 #include "input.h"
+#include "render_interface.h"
 
 static bool running = true;
 
