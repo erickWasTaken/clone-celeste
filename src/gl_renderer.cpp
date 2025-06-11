@@ -230,12 +230,11 @@ void gl_render(BumpAllocator* transientStorage){
             cam.pos.x - cam.size.x / 2.0f,
             cam.pos.x + cam.size.x / 2.0f,
             cam.pos.y - cam.size.y / 2.0f,
-            cam.pos.y + cam.size.y / 2.0f
+            cam.pos.y + cam.size.y / 2.0f,
+            cam.zoom
         );
 
         glUniformMatrix4fv(glContext.orthoProjectionID, 1, GL_FALSE, &orthoProjection.ax);
-        if(!glContext.orthoProjectionID)
-            SM_TRACE("%s", glContext.orthoProjectionID);
 
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(Transform) * renderData->transforms.count, renderData->transforms.elements);    
         glDrawArraysInstanced(GL_TRIANGLES, 0, 6, renderData->transforms.count);

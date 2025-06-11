@@ -40,6 +40,12 @@ int main(){
         return -1;
     }
 
+    gameState = (GameState*)bump_alloc(&persistentStorage, sizeof(GameState));
+    if(!gameState){
+        SM_ASSERT(false, "Failed to allocate memory for the game state!");
+        return -1;
+    }
+
     const char* str = "Linux window test, plz work X(";
 
     platform_create_window(1280, 720, str);
@@ -49,7 +55,7 @@ int main(){
         get_delta_time();
         reload_game_dll(&transientStorage);
 
-        update_game(renderData);
+        update_game(renderData, gameState);
         
         gl_render(&transientStorage);
         platform_swap_buffers();
@@ -70,8 +76,8 @@ double get_delta_time(){
     return delta;
 }
 
-void update_game(RenderData* renderDataIn){
-    update_game_ptr(renderDataIn);
+void update_game(RenderData* renderDataIn, GameState* gameStateIn){
+    update_game_ptr(renderDataIn, gameStateIn);
 }
 
 void reload_game_dll(BumpAllocator* transientStorage){

@@ -70,8 +70,41 @@ enum KeyCodeID{
   KEY_COUNT = 255,
 };
 
+struct Key{
+  b8 isDown;
+  b8 justPressed;
+  b8 justReleased;
+  unsigned char halfTransitionCount;
+};
+
 struct Input{
   IVec2 screenSize;
+
+  IVec2 pevMousePos;
+  IVec2 mousePos;
+  IVec2 relMouse;
+
+  IVec2 prevMousePosWorld;
+  IVec2 mousePosWorld;
+  IVec2 relMouseWorld;
+
+  Key keys[KEY_COUNT];
 };
 
 static Input* input;
+
+bool key_pressed_this_frame(KeyCodeID keyCode){
+  Key key = input->keys[keyCode];
+  bool result = key.isDown && key.halfTransitionCount == 1 || key.halfTransitionCount > 1;
+  return result;
+}
+
+bool key_released_this_frame(KeyCodeID keyCode){
+  Key key = input->keys[keyCode];
+  bool result = !key.isDown && key.halfTransitionCount == 1 || key.halfTransitionCount > 1;
+  return result;
+}
+
+bool key_is_down(KeyCodeID keyCode){
+  return input->keys[keyCode].isDown;
+}

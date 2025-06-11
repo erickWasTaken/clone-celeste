@@ -16,7 +16,7 @@ struct RenderData{
 
 static RenderData* renderData;
 
-void draw_sprite(SpriteID spriteID, Vec2 pos, Vec2 size){
+void draw_sprite(SpriteID spriteID, Vec2 pos){
     Sprite sprite = get_sprite(spriteID);
     if(sprite.size.x != 16){
         SM_ASSERT(false, "No sprite!");
@@ -24,7 +24,7 @@ void draw_sprite(SpriteID spriteID, Vec2 pos, Vec2 size){
     Transform transform = {};
 
     transform.pos = pos;
-    transform.size = size;
+    transform.size = toVec2(sprite.size);
     transform.spriteSize = sprite.size;
     transform.atlasOffset = sprite.atlasOffset;
 

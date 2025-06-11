@@ -7,7 +7,13 @@ constexpr int WORLD_HEIGHT = 180;
 constexpr int TILESIZE = 8;
 constexpr IVec2 WORLD_GRID = {WORLD_WIDTH / TILESIZE, WORLD_HEIGHT / TILESIZE};
 
+struct GameState{
+    bool isInitialized;
+};
+
+static GameState* gameState;
+
 extern "C"{
-    EXPORT_FN void update_game(RenderData* renderDataIn);
+    EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameState);
 }
 

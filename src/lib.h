@@ -286,6 +286,10 @@ struct IVec2{
     IVec2 operator / (int scalar){
         return {x / scalar, y / scalar};
     }
+
+    IVec2 operator * (int scalar){
+        return {(int)x * scalar, (int)y * scalar};
+    }
 };
 
 struct Vec4{
@@ -346,15 +350,15 @@ struct Mat4{
     }
 };
 
-Mat4 orthographic_projection(float left, float right, float top, float bottom){
+Mat4 orthographic_projection(float left, float right, float top, float bottom, float zoom){
     Mat4 result = {};
     result.aw = -(right + left) / (right - left);
     result.bw = (top + bottom) / (top - bottom);
     result.cw = 0.0f;
 
-    result[0][0] = 2.0f / (right - left);
-    result[1][1] = 2.0f / (top - bottom);
-    result[2][2] = 1.0f / (1.0f - 0.0f); // far and near plane
+    result[0][0] = 2.0f / (right - left) * zoom;
+    result[1][1] = 2.0f / (top - bottom) * zoom;
+    result[2][2] = 1.0f / (1.0f - 0.0f) * zoom; // far and near plane
     result[3][3] = 1.0f;
 
     return result;
