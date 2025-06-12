@@ -1,5 +1,4 @@
 #pragma once
-
 #ifdef __linux__
 #define DEBUG_BREAK() __builtin_trap()
 #define EXPORT_FN
@@ -269,6 +268,10 @@ struct IVec2{
 
     IVec2 operator - (IVec2 vec){
         return {x - vec.x, y - vec.y};
+    }
+
+    IVec2 operator + (IVec2 vec){
+        return {x + vec.x, y + vec.y};
     }
 
     IVec2& operator -= (int scalar){

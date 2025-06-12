@@ -7,9 +7,29 @@ constexpr int WORLD_HEIGHT = 180;
 constexpr int TILESIZE = 8;
 constexpr IVec2 WORLD_GRID = {WORLD_WIDTH / TILESIZE, WORLD_HEIGHT / TILESIZE};
 
+enum GameInputType{
+    MOVE_LEFT,
+    MOVE_RIGHT,
+    MOVE_UP,
+    MOVE_DOWN,
+    JUMP,
+
+    MOUSE_LEFT,
+    MOUSE_RIGHT,
+
+    PAUSE,
+
+    GAME_INPUT_COUNT
+};
+
+struct KeyMapping{
+    Array<KeyCodeID, 3> keys;
+};
+
 struct GameState{
-    bool isInitialized;
+    bool isInitialized = false;
     IVec2 playerPos;
+    KeyMapping keyMappings[GAME_INPUT_COUNT];
 };
 
 static GameState* gameState;
