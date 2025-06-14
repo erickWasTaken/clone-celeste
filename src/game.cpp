@@ -67,9 +67,19 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
         gameState->keyMappings[MOUSE_LEFT].keys.add(KEY_MOUSE_LEFT);
         gameState->keyMappings[MOUSE_RIGHT].keys.add(KEY_MOUSE_RIGHT);
 
+        IVec2 tilesPosition = {32, 0};
+        for(int y = 0; y < 5; y++){
+            for(int x = 0; x < 4; x++){
+                gameState->tileCoords.add({tilesPosition.x + x * 8, tilesPosition.y + y * 8});
+            }
+        }
+
+        gameState->tileCoords.add({tilesPosition.x, tilesPosition.y + 5 * 8});
+
         gameState->isInitialized = true;
     }
 
+    draw_sprite(SPRITE_CURSOR, input->mousePosWorld);
 
     // for(int i = 0; i < (int)(1280 / 100) + 1; i++){
     //     for(int j = 0; j < (int)(720 / 100) + 1; j++){
@@ -89,11 +99,15 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
                 continue;
 
             Transform transform = {};
-            Vec2 pos = {x * (float)TILESIZE, y * (float)TILESIZE};
+            transform.pos = {x * (float)TILESIZE, y * (float)TILESIZE};
+            transform.size = {8, 8};
+            transform.spriteSize = {8, 8};
+            transform.atlasOffset = gameState->tileCoords[tile->neighbourMask];
 
-            draw_quad(pos, {8, 8});
+            draw_quad(transform);
         }
     }
+
 
 
     if(is_down(MOVE_LEFT)){
@@ -112,12 +126,14 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
         gameState->playerPos.y += 1;
     }
 
+    bool updateTiles = false;
     if(is_down(MOUSE_LEFT)){
         IVec2 temp = input->mousePosWorld;
         // std::cout<<"x value: " << temp.x << "\ny value: " << temp.y << std::endl;
         Tile* tile = get_tile(input->mousePosWorld);
         if(tile){
             tile->visible = true;
+            updateTiles = true;
         }
     }
 
@@ -127,6 +143,45 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
         Tile* tile = get_tile(input->mousePosWorld);
         if(tile){
             tile->visible = false;
+            updateTiles = true;
+        }
+    }
+
+    if(updateTiles){
+        int neighbourOffsets[24] = {
+//          Top         Left        Right       Bottom
+            0,-1,       -1,0,       1,0,        0,1,
+//          Topleft     Topright    Bottomleft  Bottomright
+            -1,-1,      1,-1,       -1,1,       1,1,
+//          Top2        Left2       Right2      Bottom2
+            0,-2,       -2,0,       2,0,        0,2
+        };
+
+        for(int y = 0; y < WORLD_GRID.y; y++){
+            for(int x = 0; x < WORLD_GRID.x; x++){
+                Tile* tile = get_tile(x, y);
+
+                if(!tile->visible)
+                    continue;
+
+                tile->neighbourMask = 0;
+                int neighbourCount = 0;
+
+                for(int n = 0; n < 8; n++){
+                    Tile* neighbour = get_tile(x + neighbourOffsets[n * 2], y + neighbourOffsets[n * 2 + 1]);
+
+                    if(!neighbour || neighbour->visible){
+                        tile->neighbourMask |= BIT(n);
+                        neighbourCount++;
+                    }
+
+                    if(neighbourCount == 7){
+                        tile->neighbourMask = 16;
+                    }else{
+                        tile->neighbourMask = tile->neighbourMask & 0b1111;
+                    }
+                }
+            }
         }
     }
 }

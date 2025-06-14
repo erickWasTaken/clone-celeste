@@ -27,6 +27,10 @@ void draw_quad(Vec2 pos, Vec2 size){
     renderData->transforms.add(transform);
 }
 
+void draw_quad(Transform transform){
+    renderData->transforms.add(transform);
+}
+
 void draw_sprite(SpriteID spriteID, Vec2 pos){
     Sprite sprite = get_sprite(spriteID);
     

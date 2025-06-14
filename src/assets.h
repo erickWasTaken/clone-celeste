@@ -5,6 +5,7 @@
 enum SpriteID{
     SPRITE_WHITE,
     SPRITE_DICE,
+    SPRITE_CURSOR
 };
 
 
@@ -23,6 +24,10 @@ Sprite get_sprite(SpriteID spriteID){
             break;
         case SPRITE_DICE:
             sprite.atlasOffset = {16, 0};
+            sprite.size = {16, 16};
+            break;
+        case SPRITE_CURSOR:
+            sprite.atlasOffset = {64, 0};
             sprite.size = {16, 16};
             break;
     }
