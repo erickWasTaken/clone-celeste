@@ -17,6 +17,16 @@ struct RenderData{
 
 static RenderData* renderData;
 
+void draw_quad(Vec2 pos, Vec2 size){
+    Transform transform = {};
+    transform.pos = pos - size / 2.0f;
+    transform.size = size;
+    transform.atlasOffset = {0, 0};
+    transform.spriteSize = {1, 1};
+
+    renderData->transforms.add(transform);
+}
+
 void draw_sprite(SpriteID spriteID, Vec2 pos){
     Sprite sprite = get_sprite(spriteID);
     

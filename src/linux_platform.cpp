@@ -96,6 +96,14 @@ void platform_update_window(){
         XNextEvent(display, &event);
 
         switch(event.type){
+            case Expose:
+            {
+                input->screenSize.x = event.xexpose.width;
+                input->screenSize.y = event.xexpose.height;
+
+                break;
+            }
+
             case KeyPress:
             case KeyRelease:
             {
@@ -124,8 +132,14 @@ void platform_update_window(){
                 break;
             }
 
-            default:
-                break;
+            // case ClientMessage:
+            // {
+            //     Atom wmProtocol = XInternAtom(display, "WM_PROTOCOLS", False);
+            //     if(event.xclient.message_type == wmProtocol && event.xclient.data.l[0] == wmDeleteWindow){
+            //         running = false;
+            //         break;
+            //     }
+            // }
         }
     }
 }

@@ -31,10 +31,10 @@ void main(){
     //     vec2(0.5, -0.5)
     // };
 
-    float left = 0.0;
-    float top = 0.0;
-    float right = 16.0;
-    float bottom = 16.0;
+    float left = transform.atlasOffset.x;
+    float top = transform.atlasOffset.y;
+    float right = transform.atlasOffset.x + transform.spriteSize.x;
+    float bottom = transform.atlasOffset.y + transform.spriteSize.y;
 
     vec2 textureCoords[6] = {
         vec2(left, top),

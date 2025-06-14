@@ -22,6 +22,11 @@ enum GameInputType{
     GAME_INPUT_COUNT
 };
 
+struct Tile{
+    int neighbourMask;
+    bool visible;
+};
+
 struct KeyMapping{
     Array<KeyCodeID, 3> keys;
 };
@@ -29,6 +34,9 @@ struct KeyMapping{
 struct GameState{
     bool isInitialized = false;
     IVec2 playerPos;
+
+    Array<IVec2, 21> tileCoords;
+    Tile worldGrid[WORLD_GRID.x][WORLD_GRID.y];
     KeyMapping keyMappings[GAME_INPUT_COUNT];
 };
 
