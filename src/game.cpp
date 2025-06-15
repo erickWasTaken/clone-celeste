@@ -108,8 +108,6 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
         }
     }
 
-
-
     if(is_down(MOVE_LEFT)){
         gameState->playerPos.x += 1;
     }
@@ -166,20 +164,33 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
 
                 tile->neighbourMask = 0;
                 int neighbourCount = 0;
+                int emptyNeighbour = 0;
+                int extendedNeighbours = 0;
 
-                for(int n = 0; n < 8; n++){
+                for(int n = 0; n < 12; n++){
                     Tile* neighbour = get_tile(x + neighbourOffsets[n * 2], y + neighbourOffsets[n * 2 + 1]);
 
                     if(!neighbour || neighbour->visible){
                         tile->neighbourMask |= BIT(n);
-                        neighbourCount++;
+                        if(n < 8)
+                            neighbourCount++;
+                        else{
+                            extendedNeighbours++;
+                        }
+                    }else if(n < 8){
+                        emptyNeighbour = n;
                     }
 
-                    if(neighbourCount == 7){
-                        tile->neighbourMask = 16;
+                    if(neighbourCount == 7 && emptyNeighbour >= 4){
+                        tile->neighbourMask = 16 + (emptyNeighbour -4);
+                        // continue;
+                    }else if(neighbourCount == 8 && extendedNeighbours == 4){
+                        tile->neighbourMask = 20;
+                        // continue;
                     }else{
                         tile->neighbourMask = tile->neighbourMask & 0b1111;
                     }
+                        
                 }
             }
         }
