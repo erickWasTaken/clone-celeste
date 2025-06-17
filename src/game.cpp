@@ -42,86 +42,25 @@ Tile* get_tile(IVec2 worldPos){
     return get_tile(x, y);
 }
 
-EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Input* inputIn){
-    if(renderData != renderDataIn){
-        renderData = renderDataIn;
-        gameState = gameStateIn;
-        input = inputIn;
-    }
-
-    if(!gameState->isInitialized){
-        renderData->camera.size = {WORLD_WIDTH, WORLD_HEIGHT};
-        renderData->camera.pos.x = 160;
-        renderData->camera.pos.y = -90;
-        renderData->camera.zoom = 1.0f;
-
-        gameState->keyMappings[MOVE_UP].keys.add(KEY_W);
-        gameState->keyMappings[MOVE_UP].keys.add(KEY_UP);
-        gameState->keyMappings[MOVE_DOWN].keys.add(KEY_S);
-        gameState->keyMappings[MOVE_DOWN].keys.add(KEY_DOWN);
-        gameState->keyMappings[MOVE_LEFT].keys.add(KEY_A);
-        gameState->keyMappings[MOVE_LEFT].keys.add(KEY_LEFT);
-        gameState->keyMappings[MOVE_RIGHT].keys.add(KEY_D);
-        gameState->keyMappings[MOVE_RIGHT].keys.add(KEY_RIGHT);
-
-        gameState->keyMappings[MOUSE_LEFT].keys.add(KEY_MOUSE_LEFT);
-        gameState->keyMappings[MOUSE_RIGHT].keys.add(KEY_MOUSE_RIGHT);
-
-        IVec2 tilesPosition = {32, 0};
-        for(int y = 0; y < 5; y++){
-            for(int x = 0; x < 4; x++){
-                gameState->tileCoords.add({tilesPosition.x + x * 8, tilesPosition.y + y * 8});
-            }
+void simulate(){
+    {
+        gameState->player.prevPos = gameState->player.pos;
+        if(is_down(MOVE_LEFT)){
+            gameState->player.pos.x += 1;
+            // std::cout<<gameState->player.pos.x<<std::endl;
         }
 
-        gameState->tileCoords.add({tilesPosition.x, tilesPosition.y + 5 * 8});
-
-        gameState->isInitialized = true;
-    }
-
-    draw_sprite(SPRITE_CURSOR, input->mousePosWorld);
-
-    // for(int i = 0; i < (int)(1280 / 100) + 1; i++){
-    //     for(int j = 0; j < (int)(720 / 100) + 1; j++){
-    //         Sprite sprite = get_sprite(SPRITE_DICE);
-    //         Vec2 pos = toVec2({sprite.size.x * i, sprite.size.y * j});
-    //         pos.x += gameState->playerPos.x;
-    //         pos.y += gameState->playerPos.y;
-    //         draw_sprite(SPRITE_DICE, pos);
-    //     }
-    // }
-    draw_sprite(SPRITE_DICE, gameState->playerPos);
-
-    for(int y = 0; y < WORLD_GRID.y; y++){
-        for(int x = 0; x < WORLD_GRID.x; x++){
-            Tile* tile = get_tile(x, y);
-            if(!tile->visible)
-                continue;
-
-            Transform transform = {};
-            transform.pos = {x * (float)TILESIZE, y * (float)TILESIZE};
-            transform.size = {8, 8};
-            transform.spriteSize = {8, 8};
-            transform.atlasOffset = gameState->tileCoords[tile->neighbourMask];
-
-            draw_quad(transform);
+        if(is_down(MOVE_RIGHT)){
+            gameState->player.pos.x -= 1;
         }
-    }
 
-    if(is_down(MOVE_LEFT)){
-        gameState->playerPos.x += 1;
-    }
+        if(is_down(MOVE_UP)){
+            gameState->player.pos.y += 1;
+        }
 
-    if(is_down(MOVE_RIGHT)){
-        gameState->playerPos.x -= 1;
-    }
-
-    if(is_down(MOVE_UP)){
-        gameState->playerPos.y -= 1;
-    }
-
-    if(is_down(MOVE_DOWN)){
-        gameState->playerPos.y += 1;
+        if(is_down(MOVE_DOWN)){
+            gameState->player.pos.y -= 1;
+        }
     }
 
     bool updateTiles = false;
@@ -195,4 +134,76 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
             }
         }
     }
+}
+
+EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Input* inputIn, float deltaTime){
+    if(renderData != renderDataIn){
+        renderData = renderDataIn;
+        gameState = gameStateIn;
+        input = inputIn;
+    }
+
+    if(!gameState->isInitialized){
+        renderData->camera.size = {WORLD_WIDTH, WORLD_HEIGHT};
+        renderData->camera.pos.x = 160;
+        renderData->camera.pos.y = -90;
+        renderData->camera.zoom = 1.0f;
+
+        gameState->keyMappings[MOVE_UP].keys.add(KEY_W);
+        gameState->keyMappings[MOVE_UP].keys.add(KEY_UP);
+        gameState->keyMappings[MOVE_DOWN].keys.add(KEY_S);
+        gameState->keyMappings[MOVE_DOWN].keys.add(KEY_DOWN);
+        gameState->keyMappings[MOVE_LEFT].keys.add(KEY_A);
+        gameState->keyMappings[MOVE_LEFT].keys.add(KEY_LEFT);
+        gameState->keyMappings[MOVE_RIGHT].keys.add(KEY_D);
+        gameState->keyMappings[MOVE_RIGHT].keys.add(KEY_RIGHT);
+
+        gameState->keyMappings[MOUSE_LEFT].keys.add(KEY_MOUSE_LEFT);
+        gameState->keyMappings[MOUSE_RIGHT].keys.add(KEY_MOUSE_RIGHT);
+
+        IVec2 tilesPosition = {32, 0};
+        for(int y = 0; y < 5; y++){
+            for(int x = 0; x < 4; x++){
+                gameState->tileCoords.add({tilesPosition.x + x * 8, tilesPosition.y + y * 8});
+            }
+        }
+
+        gameState->tileCoords.add({tilesPosition.x, tilesPosition.y + 5 * 8});
+
+        gameState->isInitialized = true;
+    }
+
+    gameState->updateTimer += deltaTime;
+    while(gameState->updateTimer >= UPDATE_DELAY){
+        gameState->updateTimer -= UPDATE_DELAY;
+
+        simulate();
+    }
+
+    float currentStep = (float)(gameState->updateTimer / UPDATE_DELAY);
+    draw_sprite(SPRITE_CURSOR, input->mousePosWorld);
+    
+    { // render player
+        Player& player = gameState->player;
+        IVec2 playerPos = lerp(player.prevPos, player.pos, currentStep);
+        draw_sprite(SPRITE_DICE, playerPos);
+    }
+
+    for(int y = 0; y < WORLD_GRID.y; y++){
+        for(int x = 0; x < WORLD_GRID.x; x++){
+            Tile* tile = get_tile(x, y);
+            if(!tile->visible)
+                continue;
+
+            Transform transform = {};
+            transform.pos = {x * (float)TILESIZE, y * (float)TILESIZE};
+            transform.size = {8, 8};
+            transform.spriteSize = {8, 8};
+            transform.atlasOffset = gameState->tileCoords[tile->neighbourMask];
+
+            draw_quad(transform);
+        }
+    }
+
+
 }

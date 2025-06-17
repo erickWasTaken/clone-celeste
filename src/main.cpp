@@ -27,6 +27,7 @@ double get_delta_time();
 void reload_game_dll(BumpAllocator* transientStorage);
 
 int main(){
+    get_delta_time();
     BumpAllocator transientStorage = make_bump_allocator(MB(50));
     BumpAllocator persistentStorage = make_bump_allocator(MB(256));
 
@@ -55,11 +56,11 @@ int main(){
     gl_init(&transientStorage);
 
     while(running){
-        get_delta_time();
+        float deltaTime = get_delta_time();
         reload_game_dll(&transientStorage);
         platform_update_window();
 
-        update_game(renderData, gameState, input);
+        update_game(renderData, gameState, input, deltaTime);
         
         gl_render(&transientStorage);
         platform_swap_buffers();
@@ -80,8 +81,8 @@ double get_delta_time(){
     return delta;
 }
 
-void update_game(RenderData* renderDataIn, GameState* gameStateIn, Input* inputIn){
-    update_game_ptr(renderDataIn, gameStateIn, inputIn);
+void update_game(RenderData* renderDataIn, GameState* gameStateIn, Input* inputIn, float deltaTime){
+    update_game_ptr(renderDataIn, gameStateIn, inputIn, deltaTime);
 }
 
 void reload_game_dll(BumpAllocator* transientStorage){

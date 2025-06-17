@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <math.h>
 
 #define ArraySize(x) (sizeof((x)) / sizeof((x)[0]))
 
@@ -237,6 +238,7 @@ struct Array{
 };
 
 // Math stuff
+
 struct Vec2{
     float x;
     float y;
@@ -371,10 +373,20 @@ Vec2 toVec2(IVec2 vec){
     return Vec2{(float)vec.x, (float)vec.y};
 }
 
-
 int max(int a, int b){
     if(a > b)
         return a;
     return b;
+}
+
+float lerp(float a, float b, float t){
+    return a + (b - a) * t;
+}
+
+IVec2 lerp(IVec2 a, IVec2 b, float t){
+    IVec2 result;
+    result.x = lerp(a.x, b.x, t);
+    result.y = lerp(a.y, b.y, t);
+    return result;
 }
 
