@@ -259,6 +259,14 @@ struct Vec2{
         return {x + vec.x, x + vec.x};
     }
 
+    float magnitude(){
+        return abs(sqrt(x * x + y * y));
+    }
+
+    Vec2 unit(){
+        return {x / magnitude(), y / magnitude()};
+    }
+
     operator bool(){
         return x != 0.0f && 0.0f;
     }
@@ -294,6 +302,14 @@ struct IVec2{
 
     IVec2 operator * (int scalar){
         return {(int)x * scalar, (int)y * scalar};
+    }
+
+    float magnitude(){
+        return abs(sqrt(x * x + y * y));
+    }
+
+    Vec2 unit(){
+        return {x / magnitude(), y / magnitude()};
     }
 };
 
@@ -379,8 +395,19 @@ int max(int a, int b){
     return b;
 }
 
+float min(float a, float b){
+    if(a > b){
+        return b;
+    }
+    return a;
+}
+
 float lerp(float a, float b, float t){
     return a + (b - a) * t;
+}
+
+int sign(int n){
+    return (n >= 0)? 1 : -1;
 }
 
 IVec2 lerp(IVec2 a, IVec2 b, float t){
@@ -389,4 +416,30 @@ IVec2 lerp(IVec2 a, IVec2 b, float t){
     result.y = lerp(a.y, b.y, t);
     return result;
 }
+
+float approach(float current, float target, float increase){
+    if(current < target){
+        return min(current + increase, target);
+    }else{
+        return max(current - increase, target);
+    }
+}
+
+Vec2 approarch(Vec2 current, Vec2 target, float increase){
+    Vec2 result;
+
+    result.x = approach(current.x, target.x, increase);
+    result.y = approach(current.y, target.y, increase);
+    return result;
+}
+
+
+float dot(IVec2 a, IVec2 b){
+    return a.unit().x * b.unit().x + a.unit().y * b.unit().y;
+}
+
+struct IRect{
+    IVec2 pos;
+    IVec2 size;
+};
 

@@ -5,7 +5,9 @@
 enum SpriteID{
     SPRITE_WHITE,
     SPRITE_DICE,
-    SPRITE_CURSOR
+    SPRITE_CURSOR,
+    SPRITE_PLAYER,
+    SPRITE_SOLID,
 };
 
 
@@ -29,6 +31,14 @@ Sprite get_sprite(SpriteID spriteID){
         case SPRITE_CURSOR:
             sprite.atlasOffset = {64, 0};
             sprite.size = {16, 16};
+            break;
+        case SPRITE_PLAYER:
+            sprite.atlasOffset = {80, 0};
+            sprite.size = {16, 18};
+            break;
+        case SPRITE_SOLID:
+            sprite.atlasOffset = {96, 0};
+            sprite.size = {16, 4};
             break;
     }
 

@@ -42,24 +42,109 @@ Tile* get_tile(IVec2 worldPos){
     return get_tile(x, y);
 }
 
-void simulate(){
+IRect get_player_rect(){
+    return
     {
-        gameState->player.prevPos = gameState->player.pos;
+        gameState->player.pos.x - 4, // shifts from center to left corner
+        gameState->player.pos.y - 8, // ... from center to top corner
+        8,
+        16
+    };
+}
+
+IRect get_solid_rect(Solid solid){
+    Sprite solidSprite = get_sprite(solid.spriteID);
+
+    return{
+        solid.pos.x - (solidSprite.size.x / 2),
+        solid.pos.y - (solidSprite.size.y / 2),
+        solidSprite.size.x,
+        solidSprite.size.y
+    };
+}
+
+void simulate(float deltaTime){
+    {
+        Player& player = gameState->player;
+        player.prevPos = gameState->player.pos;
+        player.speed = {};
+
+        static Vec2 remainder = {};
+        constexpr float runSpeed = 2.0f;
+        constexpr float runAcceleration = 10.0f;
+
+        float mult = 1.0f;
         if(is_down(MOVE_LEFT)){
-            gameState->player.pos.x += 1;
-            // std::cout<<gameState->player.pos.x<<std::endl;
+            // mult = 3.0f;
+            // player.speed.x = -runSpeed;
+            std::cout<<dot({0, 1}, {-1, 0})<<std::endl;
         }
 
         if(is_down(MOVE_RIGHT)){
-            gameState->player.pos.x -= 1;
+            // mult = 3.0f;
+            // player.speed.x = runSpeed;
+            std::cout<<dot({0, 1}, {1, 0})<<std::endl;
         }
 
         if(is_down(MOVE_UP)){
-            gameState->player.pos.y += 1;
+            // mult = 3.0f;
+            // player.speed.y = -runSpeed;
+            
+            std::cout<<dot({0, 1}, {0, 1})<<std::endl;
         }
 
         if(is_down(MOVE_DOWN)){
-            gameState->player.pos.y -= 1;
+            // mult = 3.0f;
+            // player.speed.y = runSpeed;
+            std::cout<<dot({0, 1}, {0, -1})<<std::endl;
+        }
+
+        
+        {
+            IRect playerRect = get_player_rect();
+            
+            remainder.x += player.speed.x;
+            int moveX = round(remainder.x);
+            if(moveX){
+                remainder.x -= moveX;
+
+                int moveSign = sign(moveX);
+                bool hasCollided = false;
+
+                while(moveX != 0){
+                    player.pos.x += moveSign;
+
+                    for(int i = 0; i < gameState->solids.count; i++){
+                        Solid& solid = gameState->solids[i];
+                        IRect solidRect = get_solid_rect(solid);
+
+                        if(
+                            player.pos.x < solidRect.pos.x + solidRect.size.x && player.pos.x > solidRect.pos.x &&
+                            player.pos.y > solidRect.pos.y && player.pos.y < solidRect.pos.y + solidRect.size.y ){
+                            
+                            std::cout<<"collision detected!"<<std::endl;
+                        }
+                        
+                    }
+                    moveX -= moveSign;
+                }
+            }
+
+            // std::cout<<player.speed.y<<std::endl;
+
+            remainder.y += player.speed.y;
+            int moveY = round(remainder.y);
+            if(moveY != 0){
+                remainder.y -= moveY;
+
+                int moveSign = sign(moveY);
+
+                while(moveY){
+                    player.pos.y += moveSign;
+
+                    moveY -= moveSign;
+                }
+            }
         }
     }
 
@@ -144,22 +229,35 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
     }
 
     if(!gameState->isInitialized){
-        renderData->camera.size = {WORLD_WIDTH, WORLD_HEIGHT};
-        renderData->camera.pos.x = 160;
-        renderData->camera.pos.y = -90;
-        renderData->camera.zoom = 1.0f;
 
-        gameState->keyMappings[MOVE_UP].keys.add(KEY_W);
-        gameState->keyMappings[MOVE_UP].keys.add(KEY_UP);
-        gameState->keyMappings[MOVE_DOWN].keys.add(KEY_S);
-        gameState->keyMappings[MOVE_DOWN].keys.add(KEY_DOWN);
-        gameState->keyMappings[MOVE_LEFT].keys.add(KEY_A);
-        gameState->keyMappings[MOVE_LEFT].keys.add(KEY_LEFT);
-        gameState->keyMappings[MOVE_RIGHT].keys.add(KEY_D);
-        gameState->keyMappings[MOVE_RIGHT].keys.add(KEY_RIGHT);
+        {
+            renderData->camera.size = {WORLD_WIDTH, WORLD_HEIGHT};
+            renderData->camera.pos.x = 160;
+            renderData->camera.pos.y = -90;
+            renderData->camera.zoom = 1.0f;
+        }
 
-        gameState->keyMappings[MOUSE_LEFT].keys.add(KEY_MOUSE_LEFT);
-        gameState->keyMappings[MOUSE_RIGHT].keys.add(KEY_MOUSE_RIGHT);
+        {
+            gameState->keyMappings[MOVE_UP].keys.add(KEY_W);
+            gameState->keyMappings[MOVE_UP].keys.add(KEY_UP);
+            gameState->keyMappings[MOVE_DOWN].keys.add(KEY_S);
+            gameState->keyMappings[MOVE_DOWN].keys.add(KEY_DOWN);
+            gameState->keyMappings[MOVE_LEFT].keys.add(KEY_A);
+            gameState->keyMappings[MOVE_LEFT].keys.add(KEY_LEFT);
+            gameState->keyMappings[MOVE_RIGHT].keys.add(KEY_D);
+            gameState->keyMappings[MOVE_RIGHT].keys.add(KEY_RIGHT);
+
+            gameState->keyMappings[MOUSE_LEFT].keys.add(KEY_MOUSE_LEFT);
+            gameState->keyMappings[MOUSE_RIGHT].keys.add(KEY_MOUSE_RIGHT);
+        }
+
+        {
+            Solid solid = {};
+            solid.spriteID = SPRITE_SOLID;
+            solid.pos = screen_to_world_space({640, 480});
+            solid.speed = {.0f, .0f};
+            gameState->solids.add(solid);
+        }
 
         IVec2 tilesPosition = {32, 0};
         for(int y = 0; y < 5; y++){
@@ -177,7 +275,7 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
     while(gameState->updateTimer >= UPDATE_DELAY){
         gameState->updateTimer -= UPDATE_DELAY;
 
-        simulate();
+        simulate(deltaTime);
     }
 
     float currentStep = (float)(gameState->updateTimer / UPDATE_DELAY);
@@ -186,7 +284,12 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
     { // render player
         Player& player = gameState->player;
         IVec2 playerPos = lerp(player.prevPos, player.pos, currentStep);
-        draw_sprite(SPRITE_DICE, playerPos);
+        draw_sprite(SPRITE_PLAYER, playerPos);
+    }
+
+    {// render solids
+        Solid& solid = gameState->solids[0];
+        draw_sprite(solid.spriteID, screen_to_world_space(solid.pos));
     }
 
     for(int y = 0; y < WORLD_GRID.y; y++){
