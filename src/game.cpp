@@ -74,29 +74,34 @@ void simulate(float deltaTime){
         constexpr float runAcceleration = 10.0f;
 
         float mult = 1.0f;
+        Vec2 inputDir = {};
         if(is_down(MOVE_LEFT)){
-            // mult = 3.0f;
-            // player.speed.x = -runSpeed;
-            std::cout<<dot({0, 1}, {-1, 0})<<std::endl;
+            mult = 3.0f;
+            inputDir.x += -1;
+            inputDir.y += 0;
         }
 
         if(is_down(MOVE_RIGHT)){
-            // mult = 3.0f;
-            // player.speed.x = runSpeed;
-            std::cout<<dot({0, 1}, {1, 0})<<std::endl;
+            mult = 3.0f;
+            inputDir.x += 1;
+            inputDir.y += 0;
         }
 
         if(is_down(MOVE_UP)){
-            // mult = 3.0f;
-            // player.speed.y = -runSpeed;
+            mult = 3.0f;
+            inputDir.x += 0;
+            inputDir.y += -1;
             
-            std::cout<<dot({0, 1}, {0, 1})<<std::endl;
         }
 
         if(is_down(MOVE_DOWN)){
-            // mult = 3.0f;
-            // player.speed.y = runSpeed;
-            std::cout<<dot({0, 1}, {0, -1})<<std::endl;
+            mult = 3.0f;
+            inputDir.x += 0;
+            inputDir.y += 1;
+        }
+
+        if(inputDir.x != 0 || inputDir.y != 0){
+            player.speed = inputDir.unit() * runSpeed;
         }
 
         
