@@ -25,6 +25,14 @@ bool is_down(GameInputType type){
     return false;
 }
 
+bool any_down(){
+    for(int i = 0; i < GAME_INPUT_COUNT; i++){
+        if(is_down((GameInputType)i))
+            return true;
+    }
+    return false;
+}
+
 Tile* get_tile(int x, int y){
     Tile* tile = nullptr;
     if(x >= 0 && x < WORLD_GRID.x && y >= 0 && y < WORLD_GRID.y){
@@ -45,8 +53,8 @@ Tile* get_tile(IVec2 worldPos){
 IRect get_player_rect(){
     return
     {
-        gameState->player.pos.x - 4, // shifts from center to left corner
-        gameState->player.pos.y - 8, // ... from center to top corner
+        gameState->player.pos.x, // shifts from center to left corner
+        gameState->player.pos.y, // ... from center to top corner
         8,
         16
     };
@@ -54,13 +62,25 @@ IRect get_player_rect(){
 
 IRect get_solid_rect(Solid solid){
     Sprite solidSprite = get_sprite(solid.spriteID);
+    IVec2 solidPos = solid.pos;
+    solidPos.x -= solidSprite.size.x / 2;
+    solidPos.y -= solidSprite.size.y / 2;
+    solidPos = screen_to_world_space(solidPos);
 
     return{
-        solid.pos.x - (solidSprite.size.x / 2),
-        solid.pos.y - (solidSprite.size.y / 2),
+        solidPos.x,
+        solidPos.y,
         solidSprite.size.x,
         solidSprite.size.y
     };
+}
+
+bool rect_collision(IRect a, IRect b){
+    return
+        a.pos.x < b.pos.x + b.size.x &&
+        a.pos.x + a.size.x > b.pos.x &&
+        a.pos.y < b.pos.y + b.size.y &&
+        a.pos.y + a.size.y > b.pos.y;
 }
 
 void simulate(float deltaTime){
@@ -103,7 +123,6 @@ void simulate(float deltaTime){
         if(inputDir.x != 0 || inputDir.y != 0){
             player.speed = inputDir.unit() * runSpeed;
         }
-
         
         {
             IRect playerRect = get_player_rect();
@@ -116,37 +135,41 @@ void simulate(float deltaTime){
                 int moveSign = sign(moveX);
                 bool hasCollided = false;
 
-                while(moveX != 0){
-                    player.pos.x += moveSign;
-
+                while(moveX){
                     for(int i = 0; i < gameState->solids.count; i++){
                         Solid& solid = gameState->solids[i];
                         IRect solidRect = get_solid_rect(solid);
 
-                        if(
-                            player.pos.x < solidRect.pos.x + solidRect.size.x && player.pos.x > solidRect.pos.x &&
-                            player.pos.y > solidRect.pos.y && player.pos.y < solidRect.pos.y + solidRect.size.y ){
-                            
-                            std::cout<<"collision detected!"<<std::endl;
+                        if(rect_collision(playerRect, solidRect)){
+                            player.speed.x = 0; 
+                            return;
                         }
-                        
                     }
+
+                    player.pos.x += moveSign;
                     moveX -= moveSign;
                 }
             }
 
-            // std::cout<<player.speed.y<<std::endl;
 
             remainder.y += player.speed.y;
             int moveY = round(remainder.y);
-            if(moveY != 0){
+            if(moveY){
                 remainder.y -= moveY;
 
                 int moveSign = sign(moveY);
 
                 while(moveY){
-                    player.pos.y += moveSign;
+                    for(int i = 0; i < gameState->solids.count; i++){
+                        Solid& solid = gameState->solids[i];
+                        IRect solidRect = get_solid_rect(solid);
 
+                        if(rect_collision(playerRect, solidRect) && player.speed.y > 0){
+                            player.speed.y = 0;
+                            return;
+                        }
+                    }
+                    player.pos.y += moveSign;
                     moveY -= moveSign;
                 }
             }
