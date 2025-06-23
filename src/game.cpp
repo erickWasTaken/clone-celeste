@@ -50,6 +50,13 @@ Tile* get_tile(IVec2 worldPos){
     return get_tile(x, y);
 }
 
+IVec2 get_grid_pos(IVec2 pos){
+    return{
+        pos.x / TILESIZE,
+        pos.y / TILESIZE
+    };
+}
+
 IRect get_player_rect(){
     return
     {
@@ -63,8 +70,6 @@ IRect get_player_rect(){
 IRect get_solid_rect(Solid solid){
     Sprite solidSprite = get_sprite(solid.spriteID);
     IVec2 solidPos = solid.pos;
-    solidPos.x -= solidSprite.size.x / 2;
-    solidPos.y -= solidSprite.size.y / 2;
     solidPos = screen_to_world_space(solidPos);
 
     return{
@@ -75,58 +80,64 @@ IRect get_solid_rect(Solid solid){
     };
 }
 
+IRect get_tile_rect(int x, int y){
+    int tileX = x * TILESIZE;
+    int tileY = y * TILESIZE;
+
+    return{
+        tileX,
+        tileY,
+        8,
+        8
+    };
+}
+
 bool rect_collision(IRect a, IRect b){
     return
-        a.pos.x < b.pos.x + b.size.x &&
-        a.pos.x + a.size.x > b.pos.x &&
-        a.pos.y < b.pos.y + b.size.y &&
-        a.pos.y + a.size.y > b.pos.y;
+        a.pos.x <= b.pos.x + b.size.x &&
+        a.pos.x + a.size.x >= b.pos.x &&
+        a.pos.y <= b.pos.y + b.size.y &&
+        a.pos.y + a.size.y >= b.pos.y;
 }
 
 void simulate(float deltaTime){
     {
         Player& player = gameState->player;
         player.prevPos = gameState->player.pos;
-        player.speed = {};
 
         static Vec2 remainder = {};
+        static bool grounded = false;
         constexpr float runSpeed = 2.0f;
         constexpr float runAcceleration = 10.0f;
-
-        float mult = 1.0f;
-        Vec2 inputDir = {};
+        constexpr float fallSpeed = 3.0f;
+        constexpr float gravity = 13.0f;
+        constexpr float friction = 22.0f;
+        
         if(is_down(MOVE_LEFT)){
-            mult = 3.0f;
-            inputDir.x += -1;
-            inputDir.y += 0;
+            if(player.speed.x > 0.0f)
+                player.speed.x = 0;
+            player.speed.x = approach(player.speed.x, -runSpeed, runAcceleration * deltaTime);
         }
 
         if(is_down(MOVE_RIGHT)){
-            mult = 3.0f;
-            inputDir.x += 1;
-            inputDir.y += 0;
+            if(player.speed.x < 0.0f)
+                player.speed.x = 0;
+            player.speed.x = approach(player.speed.x, runSpeed, runAcceleration * deltaTime);
         }
 
         if(is_down(MOVE_UP)){
-            mult = 3.0f;
-            inputDir.x += 0;
-            inputDir.y += -1;
-            
+            player.pos = {};            
         }
 
-        if(is_down(MOVE_DOWN)){
-            mult = 3.0f;
-            inputDir.x += 0;
-            inputDir.y += 1;
+        // Friction
+        if(!is_down(MOVE_LEFT) && !is_down(MOVE_RIGHT)){
+            player.speed.x = approach(player.speed.x, 0, friction * deltaTime);
         }
 
-        if(inputDir.x != 0 || inputDir.y != 0){
-            player.speed = inputDir.unit() * runSpeed;
-        }
-        
-        {
+        player.speed.y = approach(player.speed.y, fallSpeed, gravity * deltaTime);
+
+        {// Move X
             IRect playerRect = get_player_rect();
-            
             remainder.x += player.speed.x;
             int moveX = round(remainder.x);
             if(moveX){
@@ -135,43 +146,93 @@ void simulate(float deltaTime){
                 int moveSign = sign(moveX);
                 bool hasCollided = false;
 
-                while(moveX){
-                    for(int i = 0; i < gameState->solids.count; i++){
-                        Solid& solid = gameState->solids[i];
-                        IRect solidRect = get_solid_rect(solid);
+                auto movePlayerX = [&]{
+                    while(moveX){
+                        playerRect.pos.x += moveSign;
+                        for(int i = 0; i < gameState->solids.count; i++){
+                            Solid& solid = gameState->solids[i];
+                            IRect solidRect = get_solid_rect(solid);
 
-                        if(rect_collision(playerRect, solidRect)){
-                            player.speed.x = 0; 
-                            return;
+                            if(rect_collision(playerRect, solidRect)){
+                                player.speed.x = 0; 
+                                return;
+                            }
                         }
+
+                        IVec2 playerGridPos = get_grid_pos(player.pos);
+                        for(int x = playerGridPos.x -1; x <= playerGridPos.x +1; x++){
+                            for(int y = playerGridPos.y -1; y <= playerGridPos.y +1; y++){
+                                Tile* tile = get_tile(x, y);
+                                if(!tile || !tile->visible){
+                                    continue;
+                                }
+
+                                IRect tileRect = get_tile_rect(x, y);
+                                if(rect_collision(playerRect, tileRect)){
+                                    player.speed.x = 0;
+                                    return;
+                                }
+                            }
+                        }
+
+                        player.pos.x += moveSign;
+                        moveX -= moveSign;
                     }
 
-                    player.pos.x += moveSign;
-                    moveX -= moveSign;
-                }
+                };
+                movePlayerX();
             }
+        }
 
 
+        {// Move Y
+            IRect playerRect = get_player_rect();
             remainder.y += player.speed.y;
             int moveY = round(remainder.y);
+
             if(moveY){
                 remainder.y -= moveY;
-
                 int moveSign = sign(moveY);
 
-                while(moveY){
-                    for(int i = 0; i < gameState->solids.count; i++){
-                        Solid& solid = gameState->solids[i];
-                        IRect solidRect = get_solid_rect(solid);
+                auto movePlayerY = [&]{
+                    while(moveY){
+                        playerRect.pos.y -= moveSign;
 
-                        if(rect_collision(playerRect, solidRect) && player.speed.y > 0){
-                            player.speed.y = 0;
-                            return;
+                        for(int i = 0; i < gameState->solids.count; i++){
+                            Solid& solid = gameState->solids[i];
+                            IRect solidRect = get_solid_rect(solid);
+
+                            if(rect_collision(playerRect, solidRect)){
+                                if(player.speed.y > 0.0f)
+                                    grounded = true;
+                                player.speed.y = 0;
+                                return;
+                            }
                         }
+                        
+                        IVec2 playerGridPos = get_grid_pos(player.pos);
+                        for(int x = playerGridPos.x -1; x < playerGridPos.x + 1; x++){
+                            for(int y = playerGridPos.y -1; y < playerGridPos.y + 1; y++){
+                                Tile* tile = get_tile(x, y);
+                                if(!tile || !tile->visible)
+                                    continue;
+                                
+                                IRect tileRect = get_tile_rect(x,y);
+                                if(rect_collision(playerRect, tileRect)){
+                                    if(player.speed.y > 0.0f)
+                                        grounded = true;
+
+                                    player.speed.y = 0.0f;
+                                    return;
+                                }
+                            }
+                        }
+
+                        player.pos.y += moveSign;
+                        moveY -= moveSign;
                     }
-                    player.pos.y += moveSign;
-                    moveY -= moveSign;
-                }
+                };
+                movePlayerY();
             }
         }
     }
@@ -319,6 +380,13 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
         Solid& solid = gameState->solids[0];
         draw_sprite(solid.spriteID, screen_to_world_space(solid.pos));
     }
+
+    Vec2 quadPos = {
+       (float)get_grid_pos(gameState->player.pos).x * TILESIZE,
+       (float)get_grid_pos(gameState->player.pos).y * TILESIZE
+    };
+
+    draw_quad(quadPos, {(float) TILESIZE, (float)TILESIZE});
 
     for(int y = 0; y < WORLD_GRID.y; y++){
         for(int x = 0; x < WORLD_GRID.x; x++){
