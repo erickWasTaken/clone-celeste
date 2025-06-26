@@ -36,7 +36,7 @@ void draw_sprite(SpriteID spriteID, Vec2 pos){
     
     Transform transform = {};
 
-    transform.pos = pos;
+    transform.pos = pos - transform.size / 2.0f;
     transform.size = toVec2(sprite.size);
     transform.spriteSize = sprite.size;
     transform.atlasOffset = sprite.atlasOffset;
@@ -45,7 +45,8 @@ void draw_sprite(SpriteID spriteID, Vec2 pos){
 }
 
 void draw_sprite(SpriteID spriteID, IVec2 pos){
-    return draw_sprite(spriteID, toVec2(pos));
+    Sprite sprite = get_sprite(spriteID);
+    return draw_sprite(spriteID, toVec2(pos - sprite.size / 2));
 }
 
 IVec2 screen_to_world_space(IVec2 coord){

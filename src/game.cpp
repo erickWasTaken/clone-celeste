@@ -39,7 +39,6 @@ Tile* get_tile(int x, int y){
         tile = &gameState->worldGrid[x][y];
     }
 
-    // std::cout<<"x value: " << x << "\ny value: " << y << std::endl;
     return tile;
 }
 
@@ -60,8 +59,8 @@ IVec2 get_grid_pos(IVec2 pos){
 IRect get_player_rect(){
     return
     {
-        gameState->player.pos.x, // shifts from center to left corner
-        gameState->player.pos.y, // ... from center to top corner
+        gameState->player.pos.x -4, // shifts from center to left corner
+        gameState->player.pos.y -8, // ... from center to top corner
         8,
         16
     };
@@ -100,6 +99,24 @@ bool rect_collision(IRect a, IRect b){
         a.pos.y + a.size.y >= b.pos.y;
 }
 
+void draw_rect(IRect rect){
+    for(int i = rect.pos.x; i <= rect.pos.x + rect.size.x; i++){
+        Vec2 pos = {(float)i, (float)rect.pos.y};
+        Vec2 size = {1.0f, 1.0f};
+        draw_quad(pos, size);
+        pos.y = (float)(rect.pos.y + rect.size.y);
+        draw_quad(pos, size);
+    }
+
+    for(int i = rect.pos.y; i <= rect.pos.y + rect.size.y; i++){
+        Vec2 pos = {(float)rect.pos.x, (float)i};
+        Vec2 size = {1.0f, 1.0f};
+        draw_quad(pos, size);
+        pos.x = (float)(rect.pos.x + rect.size.x);
+        draw_quad(pos, size);
+    }
+}
+
 void simulate(float deltaTime){
     {
         Player& player = gameState->player;
@@ -125,7 +142,11 @@ void simulate(float deltaTime){
             player.speed.x = approach(player.speed.x, runSpeed, runAcceleration * deltaTime);
         }
 
-        if(is_down(MOVE_UP)){
+        if(just_pressed(MOVE_UP)){
+            
+        }
+
+        if(is_down(JUMP)){
             player.pos = {};            
         }
 
@@ -147,7 +168,7 @@ void simulate(float deltaTime){
                 bool hasCollided = false;
 
                 auto movePlayerX = [&]{
-                    while(moveX){
+                    while(moveX != 0){
                         playerRect.pos.x += moveSign;
                         for(int i = 0; i < gameState->solids.count; i++){
                             Solid& solid = gameState->solids[i];
@@ -161,7 +182,7 @@ void simulate(float deltaTime){
 
                         IVec2 playerGridPos = get_grid_pos(player.pos);
                         for(int x = playerGridPos.x -1; x <= playerGridPos.x +1; x++){
-                            for(int y = playerGridPos.y -1; y <= playerGridPos.y +1; y++){
+                            for(int y = playerGridPos.y -2; y <= playerGridPos.y +2; y++){
                                 Tile* tile = get_tile(x, y);
                                 if(!tile || !tile->visible){
                                     continue;
@@ -196,7 +217,7 @@ void simulate(float deltaTime){
 
                 auto movePlayerY = [&]{
                     while(moveY){
-                        playerRect.pos.y -= moveSign;
+                        playerRect.pos.y += moveSign;
 
                         for(int i = 0; i < gameState->solids.count; i++){
                             Solid& solid = gameState->solids[i];
@@ -211,8 +232,8 @@ void simulate(float deltaTime){
                         }
                         
                         IVec2 playerGridPos = get_grid_pos(player.pos);
-                        for(int x = playerGridPos.x -1; x < playerGridPos.x + 1; x++){
-                            for(int y = playerGridPos.y -1; y < playerGridPos.y + 1; y++){
+                        for(int x = playerGridPos.x -1; x <= playerGridPos.x + 1; x++){
+                            for(int y = playerGridPos.y -2; y <= playerGridPos.y + 2; y++){
                                 Tile* tile = get_tile(x, y);
                                 if(!tile || !tile->visible)
                                     continue;
@@ -338,6 +359,8 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
 
             gameState->keyMappings[MOUSE_LEFT].keys.add(KEY_MOUSE_LEFT);
             gameState->keyMappings[MOUSE_RIGHT].keys.add(KEY_MOUSE_RIGHT);
+
+            gameState->keyMappings[JUMP].keys.add(KEY_SPACE);
         }
 
         {
@@ -369,7 +392,15 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
 
     float currentStep = (float)(gameState->updateTimer / UPDATE_DELAY);
     draw_sprite(SPRITE_CURSOR, input->mousePosWorld);
+
+    // draw_rect(get_player_rect());
     
+    IVec2 quadPos = {
+        round_to_int(gameState->player.pos.x),
+        round_to_int(gameState->player.pos.y)
+    };
+
+    // draw_quad(toVec2(get_grid_pos(quadPos) * TILESIZE), {(float) TILESIZE, (float)TILESIZE});
     { // render player
         Player& player = gameState->player;
         IVec2 playerPos = lerp(player.prevPos, player.pos, currentStep);
@@ -381,12 +412,6 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
         draw_sprite(solid.spriteID, screen_to_world_space(solid.pos));
     }
 
-    Vec2 quadPos = {
-       (float)get_grid_pos(gameState->player.pos).x * TILESIZE,
-       (float)get_grid_pos(gameState->player.pos).y * TILESIZE
-    };
-
-    draw_quad(quadPos, {(float) TILESIZE, (float)TILESIZE});
 
     for(int y = 0; y < WORLD_GRID.y; y++){
         for(int x = 0; x < WORLD_GRID.x; x++){
@@ -400,6 +425,7 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
             transform.spriteSize = {8, 8};
             transform.atlasOffset = gameState->tileCoords[tile->neighbourMask];
 
+            // draw_rect(get_tile_rect(x, y));
             draw_quad(transform);
         }
     }

@@ -395,6 +395,18 @@ int max(int a, int b){
     return b;
 }
 
+float max(float a, float b){
+    if(a > b)
+        return a;
+    return b;
+}
+
+long long max(long long a, long long b){
+    if(a > b)
+        return a;
+    return b;
+}
+
 float min(float a, float b){
     if(a > b){
         return b;
@@ -436,6 +448,15 @@ Vec2 approarch(Vec2 current, Vec2 target, float increase){
 
 float dot(IVec2 a, IVec2 b){
     return a.unit().x * b.unit().x + a.unit().y * b.unit().y;
+}
+
+int round_to_int(float n){
+    float remainderDown = n - floor(n);
+    float remainderUp = ceil(n) - n;
+
+    if(remainderUp > remainderDown)
+        return floor(n);
+    return ceil(n);
 }
 
 struct IRect{
