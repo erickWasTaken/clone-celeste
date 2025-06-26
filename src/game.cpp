@@ -402,7 +402,7 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
     float currentStep = (float)(gameState->updateTimer / UPDATE_DELAY);
     draw_sprite(SPRITE_CURSOR, input->mousePosWorld);
 
-    // draw_rect(get_player_rect());
+    draw_rect(get_player_rect());
     
     IVec2 quadPos = {
         round_to_int(gameState->player.pos.x),
@@ -418,6 +418,7 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
 
     {// render solids
         Solid& solid = gameState->solids[0];
+        draw_rect(get_solid_rect(solid));
         draw_sprite(solid.spriteID, screen_to_world_space(solid.pos));
     }
 

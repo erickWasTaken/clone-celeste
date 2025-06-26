@@ -14,6 +14,7 @@ enum SpriteID{
 struct Sprite{
     IVec2 atlasOffset;
     IVec2 size;
+    IVec2 offset;
 };
 
 Sprite get_sprite(SpriteID spriteID){
@@ -35,6 +36,7 @@ Sprite get_sprite(SpriteID spriteID){
         case SPRITE_PLAYER:
             sprite.atlasOffset = {80, 0};
             sprite.size = {16, 18};
+            sprite.offset = {8, 8};
             break;
         case SPRITE_SOLID:
             sprite.atlasOffset = {96, 0};
