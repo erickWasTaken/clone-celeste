@@ -129,21 +129,28 @@ void simulate(float deltaTime){
         constexpr float fallSpeed = 3.0f;
         constexpr float gravity = 13.0f;
         constexpr float friction = 22.0f;
+        constexpr float airResistance = 12.0f;
+        constexpr float jumpSpeed = -4.0f;
         
         if(is_down(MOVE_LEFT)){
             if(player.speed.x > 0.0f)
                 player.speed.x = 0;
+            if(!grounded)
+                player.speed.x = approach(player.speed.x, (runSpeed * .25f) * -1, runAcceleration * deltaTime);
             player.speed.x = approach(player.speed.x, -runSpeed, runAcceleration * deltaTime);
         }
 
         if(is_down(MOVE_RIGHT)){
             if(player.speed.x < 0.0f)
                 player.speed.x = 0;
+            if(!grounded)
+                player.speed.x = approach(player.speed.x, runSpeed * .25f, runAcceleration * deltaTime);
             player.speed.x = approach(player.speed.x, runSpeed, runAcceleration * deltaTime);
         }
 
-        if(just_pressed(MOVE_UP)){
-            
+        if(just_pressed(MOVE_UP) && grounded){
+            player.speed.y = jumpSpeed;
+            grounded = false;
         }
 
         if(is_down(JUMP)){
@@ -152,7 +159,9 @@ void simulate(float deltaTime){
 
         // Friction
         if(!is_down(MOVE_LEFT) && !is_down(MOVE_RIGHT)){
-            player.speed.x = approach(player.speed.x, 0, friction * deltaTime);
+            if(grounded)
+                player.speed.x = approach(player.speed.x, 0, friction * deltaTime);
+            player.speed.x = approach(player.speed.x, 0, airResistance * deltaTime);
         }
 
         player.speed.y = approach(player.speed.y, fallSpeed, gravity * deltaTime);
