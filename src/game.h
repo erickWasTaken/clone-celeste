@@ -37,6 +37,7 @@ struct Player{
     IVec2 pos;
     IVec2 prevPos;
     Vec2 speed;
+    Vec2 solidSpeed;
 };
 
 struct Solid{
@@ -45,6 +46,9 @@ struct Solid{
     IVec2 prevPos;
     Vec2 remainder;
     Vec2 speed;
+    int currentKeyFrame;
+
+    Array<IVec2, 2> keyFrames;
 };
 
 struct GameState{

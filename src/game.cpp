@@ -69,7 +69,6 @@ IRect get_player_rect(){
 IRect get_solid_rect(Solid solid){
     Sprite solidSprite = get_sprite(solid.spriteID);
     IVec2 solidPos = solid.pos;
-    solidPos = screen_to_world_space(solidPos);
 
     return{
         solidPos.x,
@@ -266,6 +265,61 @@ void simulate(float deltaTime){
             }
         }
     }
+    
+    {
+        Player& player = gameState->player;
+        player.solidSpeed = {};
+
+        for(int i = 0; i < gameState->solids.count; i++){
+            Solid& solid = gameState->solids[i];
+
+            IRect solidRect = get_solid_rect(solid);
+            int nextKeyFrame = solid.currentKeyFrame + 1;
+            nextKeyFrame %= solid.keyFrames.count;
+
+            solid.remainder.x += solid.speed.x;
+            int moveX = round(solid.remainder.x);
+
+            if(moveX != 0){
+                solid.remainder.x -= moveX;
+                int moveSign = sign(solid.keyFrames[nextKeyFrame].x - solid.keyFrames[solid.currentKeyFrame].x);
+                auto moveSolidX = [&]{
+                    while(moveX != 0){
+                        IRect playerRect = get_player_rect();
+                        bool standingOnTop = playerRect.pos.y + playerRect.size.y == solidRect.pos.y && playerRect.pos.x + playerRect.size.x >= solidRect.pos.x && playerRect.pos.x <= solidRect.pos.x + solidRect.size.x;
+                        solidRect.pos.x += moveSign;
+                        if(rect_collision(playerRect, solidRect)){
+                            playerRect.pos.x += moveSign;
+                            player.solidSpeed.x = solid.speed.x * moveSign / 20;
+
+                            IVec2 playerGridPos = get_grid_pos(player.pos);
+                            for(int x = playerGridPos.x -1; x <= playerGridPos.x + 1; x++){
+                                for(int y = playerGridPos.y -2; y <= playerGridPos.y + 2; y++){
+                                    IRect tileRect = get_tile_rect(x, y);
+                                    if(rect_collision(playerRect, tileRect)){
+                                        player.pos = {WORLD_WIDTH / 2, (int)(WORLD_HEIGHT * .7)};
+                                        return;
+                                    }
+
+                                    player.pos.x += moveSign;
+                                }
+                            }
+                        }
+
+                        solid.pos.x += moveSign;
+                        moveX --;
+
+                        if(solid.pos.x == solid.keyFrames[nextKeyFrame].x){
+                            solid.currentKeyFrame = nextKeyFrame;
+                            nextKeyFrame++;
+                            nextKeyFrame %= solid.keyFrames.count;
+                        }
+                    }
+                };
+                moveSolidX();
+            }
+        }
+    }
 
     bool updateTiles = false;
     if(is_down(MOUSE_LEFT)){
@@ -375,8 +429,10 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
         {
             Solid solid = {};
             solid.spriteID = SPRITE_SOLID;
-            solid.pos = screen_to_world_space({640, 480});
-            solid.speed = {.0f, .0f};
+            solid.pos = {20 * 8, 11 * 8};
+            solid.speed.x = .5f;
+            solid.keyFrames.add({solid.pos.x, solid.pos.y});
+            solid.keyFrames.add({solid.pos.x - 3 * 8, solid.pos.y});
             gameState->solids.add(solid);
         }
 
@@ -419,7 +475,7 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
     {// render solids
         Solid& solid = gameState->solids[0];
         draw_rect(get_solid_rect(solid));
-        draw_sprite(solid.spriteID, screen_to_world_space(solid.pos));
+        draw_sprite(solid.spriteID, solid.pos);
     }
 
 

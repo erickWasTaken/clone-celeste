@@ -19,7 +19,7 @@ static RenderData* renderData;
 
 void draw_quad(Vec2 pos, Vec2 size){
     Transform transform = {};
-    transform.pos = pos - size / 2.0f;
+    transform.pos = pos;
     transform.size = size;
     transform.atlasOffset = {0, 0};
     transform.spriteSize = {1, 1};
