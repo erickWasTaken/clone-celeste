@@ -276,7 +276,7 @@ void simulate(float deltaTime){
             Solid& solid = gameState->solids[i];
 
             IRect solidRect = get_solid_rect(solid);
-            solidRect.pos -= 1;
+            solidRect.pos.y -= 2;
             solidRect.size += 2;
             int nextKeyFrame = solid.currentKeyFrame + 1;
             nextKeyFrame %= solid.keyFrames.count;
@@ -359,8 +359,7 @@ void simulate(float deltaTime){
                                         
                                         IRect tileRect = get_tile_rect(x, y);
                                         if(rect_collision(playerRect, tileRect)){
-                                            if(isOnTop)
-                                                player.pos = {WORLD_WIDTH / 2, (int)(WORLD_HEIGHT * .7f)};
+                                            player.pos = {WORLD_WIDTH / 2, (int)(WORLD_HEIGHT * .7f)};
                                             return;
                                         }
                                     }
