@@ -149,6 +149,7 @@ void simulate(float deltaTime){
 
         if(just_pressed(MOVE_UP) && grounded){
             player.speed.y = jumpSpeed;
+            player.speed.x += player.solidSpeed.x;
             grounded = false;
         }
 
@@ -274,6 +275,8 @@ void simulate(float deltaTime){
             Solid& solid = gameState->solids[i];
 
             IRect solidRect = get_solid_rect(solid);
+            solidRect.pos -= 1;
+            solidRect.size += 2;
             int nextKeyFrame = solid.currentKeyFrame + 1;
             nextKeyFrame %= solid.keyFrames.count;
 
@@ -286,8 +289,9 @@ void simulate(float deltaTime){
                 auto moveSolidX = [&]{
                     while(moveX != 0){
                         IRect playerRect = get_player_rect();
-                        bool standingOnTop = playerRect.pos.y + playerRect.size.y == solidRect.pos.y && playerRect.pos.x + playerRect.size.x >= solidRect.pos.x && playerRect.pos.x <= solidRect.pos.x + solidRect.size.x;
+                        bool standingOnTop = playerRect.pos.y - 1 + playerRect.size.y == solidRect.pos.y;
                         solidRect.pos.x += moveSign;
+                        bool tileCollision = false;
                         if(rect_collision(playerRect, solidRect)){
                             playerRect.pos.x += moveSign;
                             player.solidSpeed.x = solid.speed.x * moveSign / 20;
@@ -295,19 +299,28 @@ void simulate(float deltaTime){
                             IVec2 playerGridPos = get_grid_pos(player.pos);
                             for(int x = playerGridPos.x -1; x <= playerGridPos.x + 1; x++){
                                 for(int y = playerGridPos.y -2; y <= playerGridPos.y + 2; y++){
+                                    Tile* tile = get_tile(x, y);
+                                    if(!tile || !tile->visible){
+                                        continue;
+                                    }
                                     IRect tileRect = get_tile_rect(x, y);
                                     if(rect_collision(playerRect, tileRect)){
-                                        player.pos = {WORLD_WIDTH / 2, (int)(WORLD_HEIGHT * .7)};
+                                        tileCollision = true;
+                                        if(!standingOnTop){
+                                            player.pos = {WORLD_WIDTH / 2, (int)(WORLD_HEIGHT * .7)};
+                                        }
                                         return;
                                     }
 
-                                    player.pos.x += moveSign;
                                 }
                             }
+                            
+                            if(!tileCollision)
+                                player.pos.x += moveSign;
                         }
 
                         solid.pos.x += moveSign;
-                        moveX --;
+                        moveX--;
 
                         if(solid.pos.x == solid.keyFrames[nextKeyFrame].x){
                             solid.currentKeyFrame = nextKeyFrame;
