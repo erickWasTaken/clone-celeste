@@ -24,6 +24,14 @@ enum GameInputType{
     GAME_INPUT_COUNT
 };
 
+enum AnimationState{
+    ANIM_IDLE,
+    ANIM_RUN,
+    ANIM_JUMP,
+
+    ANIM_COUNT
+};
+
 struct KeyMapping{
     Array<KeyCodeID, 3> keys;
 };
@@ -38,6 +46,10 @@ struct Player{
     IVec2 prevPos;
     Vec2 speed;
     Vec2 solidSpeed;
+
+    float animTimer;
+    AnimationState animationState;
+    SpriteID animations[ANIM_COUNT];
 };
 
 struct Solid{

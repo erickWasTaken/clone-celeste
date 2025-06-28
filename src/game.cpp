@@ -120,6 +120,7 @@ void simulate(float deltaTime){
     {
         Player& player = gameState->player;
         player.prevPos = gameState->player.pos;
+        player.animationState = ANIM_IDLE;
 
         static Vec2 remainder = {};
         static bool grounded = false;
@@ -142,8 +143,11 @@ void simulate(float deltaTime){
         if(is_down(MOVE_RIGHT)){
             if(player.speed.x < 0.0f)
                 player.speed.x = 0;
-            if(!grounded)
+            if(!grounded){
                 player.speed.x = approach(player.speed.x, runSpeed * .25f, runAcceleration * deltaTime);
+            }
+            if(grounded)
+                player.animationState = ANIM_RUN;
             player.speed.x = approach(player.speed.x, runSpeed, runAcceleration * deltaTime);
         }
 
@@ -166,6 +170,8 @@ void simulate(float deltaTime){
         }
 
         player.speed.y = approach(player.speed.y, fallSpeed, gravity * deltaTime);
+        if(!grounded)
+            player.animationState = ANIM_JUMP;
 
         {// Move X
             IRect playerRect = get_player_rect();
@@ -460,7 +466,7 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
         gameState = gameStateIn;
         input = inputIn;
     }
-
+    
     if(!gameState->isInitialized){
 
         {
@@ -487,12 +493,29 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
         }
 
         {
+            Player& player = gameState->player;
+            player.animTimer = .0f;
+            player.animations[ANIM_IDLE] = PLAYER_IDLE;
+            player.animations[ANIM_RUN] = PLAYER_RUN;
+            player.animations[ANIM_JUMP] = PLAYER_JUMP;
+        }
+
+        {
             Solid solid = {};
             solid.spriteID = SPRITE_SOLID;
-            solid.pos = {20 * 8, 11 * 8};
+            solid.pos = {19 * 8, 11 * 8};
             solid.speed.y = .5f;
             solid.keyFrames.add({solid.pos.x, solid.pos.y});
             solid.keyFrames.add({solid.pos.x, solid.pos.y - 3 * 8});
+            gameState->solids.add(solid);
+        }
+        {
+            Solid solid = {};
+            solid.spriteID = SPRITE_SOLID;
+            solid.pos = {14 * 8, 11 * 8};
+            solid.speed.x = .5f;
+            solid.keyFrames.add({solid.pos.x, solid.pos.y});
+            solid.keyFrames.add({solid.pos.x + 3 * 8, solid.pos.y});
             gameState->solids.add(solid);
         }
 
@@ -513,12 +536,12 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
         gameState->updateTimer -= UPDATE_DELAY;
 
         simulate(deltaTime);
+        gameState->player.animTimer += deltaTime;
     }
 
     float currentStep = (float)(gameState->updateTimer / UPDATE_DELAY);
     draw_sprite(SPRITE_CURSOR, input->mousePosWorld);
 
-    draw_rect(get_player_rect());
     
     IVec2 quadPos = {
         round_to_int(gameState->player.pos.x),
@@ -529,13 +552,16 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
     { // render player
         Player& player = gameState->player;
         IVec2 playerPos = lerp(player.prevPos, player.pos, currentStep);
-        draw_sprite(SPRITE_PLAYER, playerPos);
+        // draw_rect(get_player_rect());
+        draw_sprite(player.animations[player.animationState], playerPos, {animate(&player.animTimer, get_sprite(player.animations[player.animationState]).frameCount, .6f)});
     }
 
     {// render solids
-        Solid& solid = gameState->solids[0];
-        draw_rect(get_solid_rect(solid));
-        draw_sprite(solid.spriteID, solid.pos);
+        for(int i = 0; i < gameState->solids.count; i++){
+            Solid& solid = gameState->solids[i];
+            // draw_rect(get_solid_rect(solid));
+            draw_sprite(solid.spriteID, solid.pos);
+        }
     }
 
 

@@ -15,6 +15,10 @@ struct RenderData{
     Array<Transform, 1000> transforms;
 };
 
+struct DrawData{
+    int frameIndex = 1;
+};
+
 static RenderData* renderData;
 
 void draw_quad(Vec2 pos, Vec2 size){
@@ -31,7 +35,7 @@ void draw_quad(Transform transform){
     renderData->transforms.add(transform);
 }
 
-void draw_sprite(SpriteID spriteID, Vec2 pos){
+void draw_sprite(SpriteID spriteID, Vec2 pos, DrawData drawData = {}){
     Sprite sprite = get_sprite(spriteID);
     
     Transform transform = {};
@@ -40,12 +44,13 @@ void draw_sprite(SpriteID spriteID, Vec2 pos){
     transform.size = toVec2(sprite.size);
     transform.spriteSize = sprite.size;
     transform.atlasOffset = sprite.atlasOffset;
+    transform.atlasOffset.x += drawData.frameIndex * sprite.size.x;
 
     renderData->transforms.add(transform);
 }
 
-void draw_sprite(SpriteID spriteID, IVec2 pos){
-    return draw_sprite(spriteID, toVec2(pos));
+void draw_sprite(SpriteID spriteID, IVec2 pos, DrawData drawData = {}){
+    return draw_sprite(spriteID, toVec2(pos), drawData);
 }
 
 IVec2 screen_to_world_space(IVec2 coord){
@@ -58,4 +63,10 @@ IVec2 screen_to_world_space(IVec2 coord){
     yPos += cam.size.y / 2.0f + cam.pos.y;
 
     return {xPos, yPos};
+}
+
+int animate(float* timer, int frameCount, float duration){
+    int frameID = (int)((*timer / duration) * frameCount);
+    frameID %= frameCount;
+    return frameID;
 }
