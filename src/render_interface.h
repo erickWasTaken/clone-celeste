@@ -16,7 +16,7 @@ struct RenderData{
 };
 
 struct DrawData{
-    int frameIndex = 1;
+    int frameIndex = 0;
 };
 
 static RenderData* renderData;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "lib.h"
+#include <iostream>
 
 enum SpriteID{
     SPRITE_WHITE,
