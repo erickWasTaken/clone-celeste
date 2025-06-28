@@ -150,6 +150,7 @@ void simulate(float deltaTime){
         if(just_pressed(MOVE_UP) && grounded){
             player.speed.y = jumpSpeed;
             player.speed.x += player.solidSpeed.x;
+            player.speed.y += player.solidSpeed.y;
             grounded = false;
         }
 
@@ -331,6 +332,53 @@ void simulate(float deltaTime){
                 };
                 moveSolidX();
             }
+
+            {
+                solid.remainder.y += solid.speed.y;
+                int moveY = round(solid.remainder.y);
+
+                if(moveY != 0){
+                    solid.remainder.y -= moveY;
+                    int moveSign = sign(solid.keyFrames[nextKeyFrame].y - solid.keyFrames[solid.currentKeyFrame].y);
+                    auto moveSolidY = [&]{
+                        while(moveY != 0){
+                            IRect playerRect = get_player_rect();
+                            bool isOnTop = playerRect.pos.y + 1 + playerRect.size.y == solidRect.pos.y;
+                            solidRect.pos.y += moveSign;
+
+                            if(rect_collision(playerRect, solidRect)){
+                                player.pos.y += moveSign;
+                                player.solidSpeed.y = solid.speed.y * moveSign / 40; 
+
+                                IVec2 playerGridPos = get_grid_pos(player.pos);
+                                for(int x = playerGridPos.x -1; x <= playerGridPos.x + 1; x++){
+                                    for(int y = playerGridPos.y -2; y <= playerGridPos.y + 2; y++){
+                                        Tile* tile = get_tile(x, y);
+                                        if(!tile || !tile->visible)
+                                            continue;
+                                        
+                                        IRect tileRect = get_tile_rect(x, y);
+                                        if(rect_collision(playerRect, tileRect)){
+                                            if(isOnTop)
+                                                player.pos = {WORLD_WIDTH / 2, (int)(WORLD_HEIGHT * .7f)};
+                                            return;
+                                        }
+                                    }
+                                }
+                            }
+                            solid.pos.y += moveSign;
+                            moveY--;
+
+                            if(solid.pos.y == solid.keyFrames[nextKeyFrame].y){
+                                solid.currentKeyFrame = nextKeyFrame;
+                                nextKeyFrame++;
+                                nextKeyFrame %= solid.keyFrames.count;
+                            }
+                        }     
+                    };
+                    moveSolidY();
+                }
+            }
         }
     }
 
@@ -443,9 +491,9 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
             Solid solid = {};
             solid.spriteID = SPRITE_SOLID;
             solid.pos = {20 * 8, 11 * 8};
-            solid.speed.x = .5f;
+            solid.speed.y = .5f;
             solid.keyFrames.add({solid.pos.x, solid.pos.y});
-            solid.keyFrames.add({solid.pos.x - 3 * 8, solid.pos.y});
+            solid.keyFrames.add({solid.pos.x, solid.pos.y - 3 * 8});
             gameState->solids.add(solid);
         }
 
