@@ -17,6 +17,7 @@ struct RenderData{
 
 struct DrawData{
     int frameIndex = 0;
+    int renderOptions = 0;
 };
 
 static RenderData* renderData;
@@ -45,6 +46,7 @@ void draw_sprite(SpriteID spriteID, Vec2 pos, DrawData drawData = {}){
     transform.spriteSize = sprite.size;
     transform.atlasOffset = sprite.atlasOffset;
     transform.atlasOffset.x += drawData.frameIndex * sprite.size.x;
+    transform.renderOptions = drawData.renderOptions;
 
     renderData->transforms.add(transform);
 }

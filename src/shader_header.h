@@ -9,6 +9,8 @@
 #define BIT(i) 1 << i
 
 #endif
+int FLIP_X = BIT(0);
+int FLIP_Y = BIT(1);
 
 struct Transform{
     vec2 pos;

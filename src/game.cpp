@@ -131,12 +131,20 @@ void simulate(float deltaTime){
         constexpr float friction = 22.0f;
         constexpr float airResistance = 12.0f;
         constexpr float jumpSpeed = -4.0f;
+
+        if(player.speed.x < 0 && grounded)
+            player.renderOptions = FLIP_X;
+        if(player.speed.x > 0 && grounded)
+            player.renderOptions = 0;
         
         if(is_down(MOVE_LEFT)){
             if(player.speed.x > 0.0f)
                 player.speed.x = 0;
             if(!grounded)
                 player.speed.x = approach(player.speed.x, (runSpeed * .25f) * -1, runAcceleration * deltaTime);
+            if(grounded){
+                player.animationState = ANIM_RUN;
+            }
             player.speed.x = approach(player.speed.x, -runSpeed, runAcceleration * deltaTime);
         }
 
@@ -553,7 +561,10 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
         Player& player = gameState->player;
         IVec2 playerPos = lerp(player.prevPos, player.pos, currentStep);
         // draw_rect(get_player_rect());
-        draw_sprite(player.animations[player.animationState], playerPos, {animate(&player.animTimer, get_sprite(player.animations[player.animationState]).frameCount, .6f)});
+        draw_sprite(player.animations[player.animationState], playerPos, {
+            animate(&player.animTimer, get_sprite(player.animations[player.animationState]).frameCount, .6f),
+            player.renderOptions
+        });
     }
 
     {// render solids

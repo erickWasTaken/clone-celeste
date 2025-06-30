@@ -47,6 +47,8 @@ struct Player{
     Vec2 speed;
     Vec2 solidSpeed;
 
+    int renderOptions;
+
     float animTimer;
     AnimationState animationState;
     SpriteID animations[ANIM_COUNT];

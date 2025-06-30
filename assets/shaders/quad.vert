@@ -31,10 +31,16 @@ void main(){
     //     vec2(0.5, -0.5)
     // };
 
-    float left = transform.atlasOffset.x;
-    float top = transform.atlasOffset.y;
-    float right = transform.atlasOffset.x + transform.spriteSize.x;
-    float bottom = transform.atlasOffset.y + transform.spriteSize.y;
+    int left = transform.atlasOffset.x;
+    int top = transform.atlasOffset.y;
+    int right = transform.atlasOffset.x + transform.spriteSize.x;
+    int bottom = transform.atlasOffset.y + transform.spriteSize.y;
+
+    if(bool(transform.renderOptions & FLIP_X)){
+        int temp = left;
+        left = right;
+        right = temp;
+    }
 
     vec2 textureCoords[6] = {
         vec2(left, top),
@@ -45,6 +51,7 @@ void main(){
         vec2(left, bottom),
         vec2(right, bottom)
     };
+
 
     vec2 vertexPos = vertices[gl_VertexID];
     // vertexPos.y = -vertexPos.y + screenSize.y;
