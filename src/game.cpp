@@ -170,16 +170,18 @@ void simulate(float deltaTime){
             player.pos = {};            
         }
 
+        player.speed.y = approach(player.speed.y, fallSpeed, gravity * deltaTime);
+
         // Friction
         if(!is_down(MOVE_LEFT) && !is_down(MOVE_RIGHT)){
             if(grounded)
                 player.speed.x = approach(player.speed.x, 0, friction * deltaTime);
-            player.speed.x = approach(player.speed.x, 0, airResistance * deltaTime);
+            // player.speed.x = approach(player.speed.x, 0, airResistance * deltaTime);
         }
 
-        player.speed.y = approach(player.speed.y, fallSpeed, gravity * deltaTime);
-        if(!grounded)
+        if(!grounded){
             player.animationState = ANIM_JUMP;
+        }
 
         {// Move X
             IRect playerRect = get_player_rect();
@@ -238,6 +240,7 @@ void simulate(float deltaTime){
             if(moveY){
                 remainder.y -= moveY;
                 int moveSign = sign(moveY);
+                bool hasCollided = false;
 
                 auto movePlayerY = [&]{
                     while(moveY){
@@ -253,6 +256,7 @@ void simulate(float deltaTime){
                                 player.speed.y = 0;
                                 return;
                             }
+                            grounded = false;
                         }
                         
                         IVec2 playerGridPos = get_grid_pos(player.pos);
@@ -270,6 +274,7 @@ void simulate(float deltaTime){
                                     player.speed.y = 0.0f;
                                     return;
                                 }
+                                grounded = false;
                             }
                         }
 
@@ -548,6 +553,8 @@ EXPORT_FN void update_game(RenderData* renderDataIn, GameState* gameStateIn, Inp
     }
 
     float currentStep = (float)(gameState->updateTimer / UPDATE_DELAY);
+
+    draw_ui_text("lorem ipsum", {14 * 8, 11 * 8}, {1.0f, FONT});
     draw_sprite(SPRITE_CURSOR, input->mousePosWorld);
 
     

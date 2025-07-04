@@ -4,18 +4,20 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 struct GLContext{
     GLuint programID;
-    long long shaderTimestamp;
-
     GLuint textureID;
-    long long textureTimestamp;
+    GLuint fontAtlasID;
 
     GLuint transformSBOID;
-
     GLuint screenSizeID;
-
     GLuint orthoProjectionID;
+
+    long long shaderTimestamp;
+    long long textureTimestamp;
 };
 
 static GLContext glContext;
@@ -44,7 +46,7 @@ GLuint gl_create_shader(int shaderType, char* shaderPath, BumpAllocator* transie
     glShaderSource(shaderID, ArraySize(shaderSources), shaderSources, 0);
     glCompileShader(shaderID);
 
-    {
+{
         int success;
         char shaderLog[2048] = {};
 
@@ -56,6 +58,74 @@ GLuint gl_create_shader(int shaderType, char* shaderPath, BumpAllocator* transie
         }
     }
     return shaderID;
+}
+
+void load_font(char* fontPath, int fontSize){
+    FT_Library ftLibrary;
+    FT_Init_FreeType(&ftLibrary);
+
+
+    FT_Face fontFace;
+    FT_New_Face(ftLibrary, fontPath, 0, &fontFace);
+    FT_Set_Pixel_Sizes(fontFace, 0, fontSize);
+
+
+    int padding = 2;
+    int row = 0;
+    int col = padding;
+
+
+    const int textureWidth = 512;
+    char textureBuffer[textureWidth * textureWidth];
+
+    for(FT_ULong i = 32; i < 127; i++){
+        FT_UInt glyphID = FT_Get_Char_Index(fontFace, i);
+        FT_Load_Glyph(fontFace, glyphID, FT_LOAD_DEFAULT);
+        FT_Error error = FT_Render_Glyph(fontFace->glyph, FT_RENDER_MODE_NORMAL);
+
+        if(col + fontFace->glyph->bitmap.width >= textureWidth){
+            row += fontSize;
+            col = padding;
+        }
+
+        renderData->fontHeight = max((fontFace->size->metrics.ascender - fontFace->size->metrics.descender) >> 6, renderData->fontHeight);
+
+        for(unsigned int y = 0; y < fontFace->glyph->bitmap.rows; ++y){
+            for(unsigned int x = 0; x < fontFace->glyph->bitmap.width; ++x){
+                textureBuffer[(row + y) * textureWidth + col + x] = fontFace->glyph->bitmap.buffer[y * fontFace->glyph->bitmap.width + x];
+            }
+        }
+
+        Glyph* glyph = &renderData->glyphs[i];
+        glyph->textureCoords = {col, row};
+
+        glyph->size = {
+            (int)fontFace->glyph->bitmap.width,
+            (int)fontFace->glyph->bitmap.rows
+        };
+
+        glyph->advance = {
+            (float)(fontFace->glyph->advance.x >> 6),
+            (float)(fontFace->glyph->advance.y >> 6)
+        };
+
+        col += fontFace->glyph->bitmap.width + padding;
+    }
+
+    FT_Done_Face(fontFace);
+    FT_Done_FreeType(ftLibrary);
+
+
+    glGenTextures(1, (GLuint*)&glContext.fontAtlasID);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, glContext.fontAtlasID);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, textureWidth, textureWidth, 0, GL_RED, GL_UNSIGNED_BYTE, (char*)textureBuffer);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
 bool gl_init(BumpAllocator* transientStorage){
@@ -70,6 +140,7 @@ bool gl_init(BumpAllocator* transientStorage){
     }
 
     long long timestampVert = get_timestamp("assets/shaders/quad.vert");
+    
     long long timestampFrag = get_timestamp("assets/shaders/quad.frag");
     
     glContext.shaderTimestamp = max(timestampVert, timestampFrag);
@@ -126,6 +197,11 @@ bool gl_init(BumpAllocator* transientStorage){
         glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
         glContext.textureTimestamp = get_timestamp(TEXTURE_PATH);
         stbi_image_free(data);
+    }
+
+    {
+        load_font("assets/fonts/Gridular-Font/Gridular-Regular.ttf", 16);
+        // load_font("assets/fonts/AtariClassic-gry3.ttf", 8);
     }
 
     { // Transform storage buffer
@@ -240,4 +316,24 @@ void gl_render(BumpAllocator* transientStorage){
         glDrawArraysInstanced(GL_TRIANGLES, 0, 6, renderData->transforms.count);
         renderData->transforms.count = 0;
     }
+
+    // UI pass
+    {
+        OrthographicCamera cam = renderData->camera;
+        Mat4 projection = orthographic_projection(
+            cam.pos.x - cam.size.x / 2.0f,
+            cam.pos.x + cam.size.x / 2.0f,
+            cam.pos.y - cam.size.y / 2.0f,
+            cam.pos.y + cam.size.y / 2.0f,
+            cam.zoom
+        );
+
+        glUniformMatrix4fv(glContext.orthoProjectionID, 1, GL_FALSE, &projection.ax);
+
+        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(Transform) * renderData->uiTransforms.count, renderData->uiTransforms.elements);
+        glDrawArraysInstanced(GL_TRIANGLES, 0, 6, renderData->uiTransforms.count);
+        renderData->uiTransforms.count = 0;
+    }
+
 }
+

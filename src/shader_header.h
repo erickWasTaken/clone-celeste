@@ -11,6 +11,7 @@
 #endif
 int FLIP_X = BIT(0);
 int FLIP_Y = BIT(1);
+int FONT = BIT(2);
 
 struct Transform{
     vec2 pos;

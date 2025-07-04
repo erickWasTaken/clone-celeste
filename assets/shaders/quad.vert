@@ -1,5 +1,6 @@
 
 layout (location = 0) out vec2 texCoordOut;
+layout (location = 1) out flat int renderOptions;
 
 layout (std430, binding = 0) buffer TransformSBO{
     Transform transforms[];
@@ -10,6 +11,7 @@ uniform mat4 orthoProjection;
 
 void main(){
     Transform transform = transforms[gl_InstanceID];
+    renderOptions = transform.renderOptions;
 
     vec2 vertices[6] = {
         transform.pos,                                      // top left                      

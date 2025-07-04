@@ -10,13 +10,30 @@ struct OrthographicCamera{
     Vec2 pos;
 };
 
+struct Glyph{
+    Vec2 offset;
+    Vec2 advance;
+    IVec2 size;
+    IVec2 textureCoords;
+};
+
 struct RenderData{
     OrthographicCamera camera;
+    OrthographicCamera uiCamera;
+
+    int fontHeight;
+    Glyph glyphs[127];
     Array<Transform, 1000> transforms;
+    Array<Transform, 100> uiTransforms;
 };
 
 struct DrawData{
     int frameIndex = 0;
+    int renderOptions = 0;
+};
+
+struct TextData{
+    float fontScale = 1.0f;
     int renderOptions = 0;
 };
 
@@ -71,4 +88,32 @@ int animate(float* timer, int frameCount, float duration){
     int frameID = (int)((*timer / duration) * frameCount);
     frameID %= frameCount;
     return frameID;
+}
+
+
+void draw_ui_text(char* text, Vec2 pos, TextData textData = {}){
+    if(!text)
+        text = "<NO TEXT>";
+
+    Vec2 origin = pos;
+    while(char c = *(text++)){
+        if(c == '\n'){
+            pos.y += renderData->fontHeight * textData.fontScale;
+            pos.x = origin.x;
+            continue;
+        }
+
+        Glyph glyph = renderData->glyphs[c];
+        Transform transform = {};
+        transform.pos.x = pos.x + glyph.offset.x * textData.fontScale;
+        transform.pos.y = pos.y - glyph.offset.y * textData.fontScale;
+        transform.atlasOffset = glyph.textureCoords;
+        transform.spriteSize = glyph.size;
+        transform.size = toVec2(glyph.size) * textData.fontScale;
+        transform.renderOptions = textData.renderOptions | FONT;
+
+        renderData->uiTransforms.add(transform);
+
+        pos.x += glyph.advance.x * textData.fontScale;
+    }
 }
